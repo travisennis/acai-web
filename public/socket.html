@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Example</title>
+</head>
+
+<body>
+  <h1>WebSocket Connection Example</h1>
+  <div id="status"></div>
+  <div id="messages"></div>
+
+  <script type="module">
+    // Establish WebSocket connection
+    const ws = new WebSocket('ws://localhost:8080/ws');
+
+    // Connection opened
+    ws.addEventListener('open', (event) => {
+      console.log('Connected to WebSocket server');
+      document.getElementById('status').textContent = 'Connected';
+    });
+
+    // Listen for messages
+    ws.addEventListener('message', (event) => {
+      console.log('Message from server:', event.data);
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML += `<p>${event.data}</p>`;
+    });
+
+    // Connection closed
+    ws.addEventListener('close', (event) => {
+      console.log('Disconnected from WebSocket server');
+      document.getElementById('status').textContent = 'Disconnected';
+    });
+
+    // Error handling
+    ws.addEventListener('error', (event) => {
+      console.error('WebSocket error:', event);
+      document.getElementById('status').textContent = 'Error occurred';
+    });
+  </script>
+</body>
+
+</html>
