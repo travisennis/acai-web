@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --experimental-strip-types --watch source/index.ts",
-    "build": "vite build --mode client && vite build",
+    "build": "tsc",
     "lint": "biome lint",
     "lint:fix": "biome lint --unsafe --write",
     "lint:staged": "biome lint --error-on-warnings --no-errors-on-unmatched --staged",
@@ -28,12 +28,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@hono/vite-build": "^1.1.1",
-    "@hono/vite-dev-server": "^0.17.0",
     "@types/node": "^22.10.2",
     "prettier": "3.4.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "typescript": "^5.7.2"
   }
 }
