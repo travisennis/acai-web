@@ -1,4 +1,3 @@
-import { createServer } from "node:http2";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
@@ -9,6 +8,7 @@ import { createAdapter } from "@socket.io/redis-streams-adapter";
 import { createNodeWebSocket } from "@hono/node-ws";
 import chatApp from "./chat.ts";
 import instructApp from "./instruct.ts";
+import historyApp from "./history.ts";
 
 const app = new Hono();
 
@@ -37,7 +37,10 @@ app.get(
   }),
 );
 
-const routes = app.route("/instruct", instructApp).route("/chat", chatApp);
+const routes = app
+  .route("/instruct", instructApp)
+  .route("/chat", chatApp)
+  .route("/history", historyApp);
 
 const honoServer = serve(
   {
@@ -67,7 +70,7 @@ const honoServer = serve(
 
       await redisClient.connect();
 
-      console.log(`Starting socket server`);
+      console.log("Starting socket server");
       const io = new Server(honoServer, {
         path: "/ws2",
         adapter: createAdapter(redisClient),
