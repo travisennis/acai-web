@@ -26,30 +26,30 @@
     </div>
   </nav>
 
-  <div class="flex-1 h-full bg-gray-50">
+  <div class="flex-1 bg-gray-50 overflow-hidden">
     <div class="h-full mx-auto max-w-7xl">
-      <div class="h-full rounded-lg bg-white p-4 shadow-lg flex flex-col">
+      <div class="h-full rounded-lg bg-white p-4 shadow-lg">
         <!-- History List View -->
-        <div id="historyList" class="flex-1">
+        <div id="historyList" class="h-full overflow-auto">
           <div id="interactions" class="space-y-4"></div>
           <div class="mt-4 flex justify-center space-x-2" id="pagination"></div>
         </div>
 
         <!-- Detail View (initially hidden) -->
-        <div id="detailView" class="flex-1 hidden">
+        <div id="detailView" class="hidden h-full flex flex-col">
           <button id="backButton" class="mb-4 text-blue-600 hover:text-blue-800">← Back to list</button>
-          <div class="space-y-4">
+          <div class="grid grid-rows-2 gap-4 h-[calc(100%-2rem)]">
             <div class="bg-gray-50 p-4 rounded-lg">
               <h3 class="font-medium text-gray-700 mb-2">Prompt:</h3>
-              <p>
-              <pre id="promptContent" class="text-gray-600"></pre>
-              </p>
+              <div class="h-[calc(100%-2rem)] overflow-auto bg-white p-2 rounded">
+                <pre id="promptContent" class="text-gray-600 whitespace-pre-wrap"></pre>
+              </div>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
               <h3 class="font-medium text-gray-700 mb-2">Response:</h3>
-              <p>
-              <pre id="responseContent" class="text-gray-600"></pre>
-              </p>
+              <div class="h-[calc(100%-2rem)] overflow-auto bg-white p-2 rounded">
+                <pre id="responseContent" class="text-gray-600 whitespace-pre-wrap"></pre>
+              </div>
             </div>
           </div>
         </div>
@@ -105,8 +105,6 @@
         const response = await fetch(`/history/${id}`);
         const data = await response.json();
 
-        // document.getElementById('promptContent').innerHTML = marked.parse(data.prompt);
-        // document.getElementById('responseContent').innerHTML = marked.parse(data.message);
         document.getElementById('promptContent').textContent = data.prompt;
         document.getElementById('responseContent').textContent = data.message;
 
