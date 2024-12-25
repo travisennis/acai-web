@@ -1,13 +1,14 @@
+import path from "node:path";
 import { zValidator } from "@hono/zod-validator";
 import {
-  languageModel,
-  middleware,
   type ModelName,
+  isSupportedModel,
+  languageModel,
   wrapLanguageModel,
 } from "@travisennis/ai-sdk-ext";
+import { auditMessage, log, usage } from "@travisennis/ai-sdk-ext/middleware";
 import { type CoreMessage, generateText } from "ai";
 import { type Env, Hono } from "hono";
-import path from "node:path";
 import { z } from "zod";
 
 const app = new Hono<Env>();
@@ -30,6 +31,10 @@ app.post(
     const { model, maxTokens, temperature, message, mode } =
       c.req.valid("json");
 
+    const chosenModel: ModelName = isSupportedModel(model)
+      ? model
+      : "anthropic:sonnet";
+
     messages.push({
       role: "user",
       content: message,
@@ -37,14 +42,15 @@ app.post(
 
     const { text } = await generateText({
       model: wrapLanguageModel(
-        languageModel((model as ModelName) ?? "anthropic:sonnet"),
-        middleware.log,
-        middleware.usage,
-        middleware.auditMessage({ path: path.join("data", "messages.jsonl") }),
+        languageModel(chosenModel),
+        log,
+        usage,
+        auditMessage({ path: path.join("data", "messages.jsonl") }),
       ),
       temperature: temperature ?? 0.3,
       maxTokens: maxTokens ?? 8192,
-      system: `You are a very helpful assistant that is focused on helping solve hard problems.`,
+      system:
+        "You are a very helpful assistant that is focused on helping solve hard problems.",
       messages: messages,
     });
 

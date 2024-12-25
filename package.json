@@ -20,6 +20,7 @@
     "@hono/node-ws": "^1.0.5",
     "@hono/zod-validator": "^0.4.2",
     "@socket.io/redis-streams-adapter": "^0.2.2",
+    "@travisennis/ai-sdk-ext": "0.0.0",
     "ai": "^4.0.22",
     "hono": "^4.6.14",
     "redis": "^4.7.0",

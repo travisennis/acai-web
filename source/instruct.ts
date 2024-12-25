@@ -1,17 +1,24 @@
-import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { zValidator } from "@hono/zod-validator";
 import {
-  languageModel,
-  middleware,
   type ModelName,
+  isSupportedModel,
+  languageModel,
   wrapLanguageModel,
-  tools,
 } from "@travisennis/ai-sdk-ext";
-import { type CoreMessage, generateText, type UserContent } from "ai";
+import { auditMessage, log, usage } from "@travisennis/ai-sdk-ext/middleware";
+import {
+  createCodeInterpreterTool,
+  createFileSystemTools,
+  createGitTools,
+  createRaindropTools,
+  createUrlTools,
+} from "@travisennis/ai-sdk-ext/tools";
+import { type CoreMessage, type UserContent, generateText } from "ai";
 import { Hono } from "hono";
 import { z } from "zod";
-import path from "node:path";
 
 export const app = new Hono().post(
   "/",
@@ -28,6 +35,10 @@ export const app = new Hono().post(
   async (c) => {
     const { model, maxTokens, temperature, message, mode } =
       c.req.valid("json");
+
+    const chosenModel: ModelName = isSupportedModel(model)
+      ? model
+      : "anthropic:sonnet";
 
     const lines = message.split("\n");
     const processedLines: string[] = [];
@@ -153,27 +164,27 @@ export const app = new Hono().post(
         content,
       });
     } else {
-      messages.push({
+      messages.pus({
         role: "user",
         content: finalMessage,
       });
     }
 
-    const fsTools = await tools.createFileSystemTools({
+    const fsTools = await createFileSystemTools({
       workingDir: projectDir ?? `${baseDir}/temp`,
     });
 
-    const gitTools = await tools.createGitTools({
+    const gitTools = await createGitTools({
       workingDir: projectDir ?? `${baseDir}/temp`,
     });
 
-    const codeInterpreterTool = tools.createCodeInterpreterTool({});
+    const codeInterpreterTool = createCodeInterpreterTool({});
 
-    const raindropTools = tools.createRaindropTools({
+    const raindropTools = createRaindropTools({
       apiKey: process.env.RAINDROP_API_KEY ?? "",
     });
 
-    const urlTools = tools.createUrlTools();
+    const urlTools = createUrlTools();
 
     const allTools = {
       ...fsTools,
@@ -185,10 +196,10 @@ export const app = new Hono().post(
 
     const { text } = await generateText({
       model: wrapLanguageModel(
-        languageModel((model as ModelName) ?? "anthropic:sonnet"),
-        middleware.log,
-        middleware.usage,
-        middleware.auditMessage({ path: path.join("data", "messages.jsonl") }),
+        languageModel(chosenModel),
+        log,
+        usage,
+        auditMessage({ path: path.join("data", "messages.jsonl") }),
       ),
       temperature: temperature ?? 0.3,
       maxTokens: maxTokens ?? 8192,
