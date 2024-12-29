@@ -1,89 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="/public/style.css">
+  </style>
 </head>
 
-<body class="h-screen">
-  <!-- Navbar -->
-  <nav class="bg-white shadow-md mb-4">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex justify-start space-x-8 h-16 items-center">
-        <div class="flex space-x-8">
-          <a href="/public/instruct.html"
-            class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Instruct</a>
-          <a href="/public/chat.html"
-            class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Chat</a>
-          <a href="/public/files.html"
-            class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Files</a>
-          <a href="/public/history.html"
-            class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">History</a>
-        </div>
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <div class="nav-links">
+        <a href="/public/instruct.html" class="nav-link">Instruct</a>
+        <a href="/public/chat.html" class="nav-link">Chat</a>
+        <a href="/public/files.html" class="nav-link">Files</a>
+        <a href="/public/history.html" class="nav-link">History</a>
       </div>
     </div>
   </nav>
-  <div class="h-[calc(100vh-5rem)] bg-gray-50">
-    <div class="h-full mx-auto max-w-6xl">
-      <div class="h-full rounded-lg bg-white p-6 shadow-lg">
-        <!-- Main container with sidebar -->
-        <div class="h-full flex gap-6">
-          <!-- Left section (messages + input) -->
-          <div class="flex-1 flex flex-col">
-            <!-- Chat Messages Area -->
-            <div id="messagesContainer" class="flex-1 overflow-y-auto mb-4 p-4 space-y-4 bg-gray-50 rounded-lg">
-              <!-- Messages will be inserted here -->
+
+  <main class="main-content">
+    <div class="content-container">
+      <div class="chat-container">
+        <div class="chat-form">
+          <div class="input-section">
+            <!-- Left section (messages + input) -->
+            <div class="message-container">
+              <div id="messagesContainer" class="messages-container">
+                <!-- Messages will be inserted here -->
+              </div>
+
+              <form id="chatForm" class="chat-input-container">
+                <textarea id="message" name="message" rows="1" class="chat-textarea"
+                  placeholder="Type your message here...(Ctrl+Enter to submit)"></textarea>
+                <button type="submit" id="submitButton" class="submit-button">Send</button>
+              </form>
             </div>
 
-            <!-- Message Input Form -->
-            <form id="chatForm" class="flex gap-2">
-              <textarea id="message" name="message" rows="1"
-                class="flex-1 resize-none rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                placeholder="Type your message here..."></textarea>
-              <button type="submit"
-                class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400">
-                Send
-              </button>
-            </form>
-          </div>
-
-          <!-- Sidebar -->
-          <div class="w-64 flex-shrink-0">
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
-              <div class="space-y-4">
-                <div class="space-y-2">
-                  <label for="model" class="block text-sm font-medium text-gray-700">
-                    Model
-                  </label>
-                  <select id="model" name="model"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <!-- Settings Panel -->
+            <div class="settings-panel">
+              <div class="settings-container">
+                <div class="settings-group">
+                  <label for="model" class="settings-label">Model</label>
+                  <select id="model" name="model" class="settings-input">
                   </select>
                 </div>
 
-                <div class="space-y-2">
-                  <label for="maxTokens" class="block text-sm font-medium text-gray-700">
-                    Max Tokens
-                  </label>
+                <div class="settings-group">
+                  <label for="maxTokens" class="settings-label">Max Tokens</label>
                   <input type="number" id="maxTokens" name="maxTokens" min="0" max="8192" step="1" value="8192"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                    class="settings-input">
                 </div>
 
-                <div class="space-y-2">
-                  <label for="temperature" class="block text-sm font-medium text-gray-700">
-                    Temperature
-                  </label>
+                <div class="settings-group">
+                  <label for="temperature" class="settings-label">Temperature</label>
                   <input type="number" id="temperature" name="temperature" step="0.1" min="0" max="2" value="0.3"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                    class="settings-input">
                 </div>
 
-                <div class="space-y-2">
-                  <label for="mode" class="block text-sm font-medium text-gray-700">
-                    Mode
-                  </label>
-                  <select id="mode" name="mode"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <div class="settings-group">
+                  <label for="mode" class="settings-label">Mode</label>
+                  <select id="mode" name="mode" class="settings-input">
                   </select>
                 </div>
               </div>
@@ -92,7 +72,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </main>
 
   <script type="module">
     import {marked} from "https://esm.run/marked";
@@ -120,6 +100,7 @@
     ];
 
     const messages = [];
+    let isLoading = false;
 
     // Initialize select options
     function initializeSelects() {
@@ -151,13 +132,10 @@
 
       messages.forEach(message => {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`;
+        messageDiv.className = `message ${message.role}`;
 
         const contentDiv = document.createElement('div');
-        contentDiv.className = `${message.role === 'user'
-          ? 'bg-blue-500 text-white'
-          : 'bg-gray-200 text-gray-800'
-          } rounded-lg py-2 px-4 max-w-[70%]`;
+        contentDiv.className = 'message-content';
         contentDiv.innerHTML = marked.parse(message.content);
 
         messageDiv.appendChild(contentDiv);
@@ -168,14 +146,35 @@
       container.scrollTop = container.scrollHeight;
     }
 
+    function setLoading(loading) {
+      isLoading = loading;
+      const submitButton = document.getElementById('submitButton');
+      submitButton.disabled = loading;
+
+      if (loading) {
+        submitButton.innerHTML = `
+      <svg class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="16" height="16">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Processing...
+    `;
+      } else {
+        submitButton.textContent = 'Send';
+      }
+    }
+
     // Handle form submission
     async function handleSubmit(event) {
       event.preventDefault();
+      if (isLoading) return;
 
-      const formData = new FormData(event.target);
-      const message = formData.get('message');
+      const messageInput = document.getElementById('message');
+      const message = messageInput.value;
 
       if (!message.trim()) return;
+
+      setLoading(true);
 
       // Add user message
       messages.push({
@@ -184,7 +183,7 @@
       });
 
       // Clear input
-      event.target.reset();
+      messageInput.value = '';
 
       // Render messages
       renderMessages();
@@ -207,8 +206,7 @@
 
         const data = await response.json();
 
-        // Add assistant message (you'll need to extract the response from your server's HTML response)
-        // This is a simplified version - you might need to adjust based on your server response
+        // Add assistant message
         messages.push({
           role: 'assistant',
           content: data.content
@@ -217,6 +215,9 @@
         renderMessages();
       } catch (error) {
         console.error('Error:', error);
+        // Could add error handling UI here
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -232,7 +233,7 @@
       initializeSelects();
       document.getElementById('chatForm').addEventListener('submit', handleSubmit);
       document.getElementById("message").addEventListener('keydown', handleKeyDown);
-    });
+    });  
   </script>
 </body>
 
