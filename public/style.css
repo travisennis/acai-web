@@ -469,6 +469,7 @@ select:focus {
   display: flex;
   flex-direction: column;
   padding: 1rem;
+  overflow: hidden;
 }
 
 .back-button {
@@ -479,6 +480,7 @@ select:focus {
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 0.25rem;
+  align-self: flex-start;
 }
 
 .back-button:hover {
@@ -490,12 +492,16 @@ select:focus {
   grid-template-rows: 1fr 1fr;
   gap: 1rem;
   height: calc(100% - 3rem);
+  overflow: hidden;
 }
 
 .detail-section {
   background: var(--background);
   padding: 1rem;
   border-radius: 0.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-heading {
@@ -505,8 +511,9 @@ select:focus {
 }
 
 .detail-content {
-  height: calc(100% - 2rem);
-  overflow: auto;
+  flex: 1;
+  overflow-y: auto;
+  /* Change to auto */
   background: var(--surface);
   padding: 0.5rem;
   border-radius: 0.25rem;

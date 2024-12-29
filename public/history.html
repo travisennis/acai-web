@@ -80,7 +80,24 @@
         const paginationDiv = document.getElementById('pagination');
         paginationDiv.innerHTML = '';
 
-        for (let i = 1; i <= data.pagination.totalPages; i++) {
+        const totalPages = data.pagination.totalPages;
+        const startPage = Math.max(1, Math.floor((page - 1) / 10) * 10 + 1);
+        const endPage = Math.min(startPage + 9, totalPages);
+
+        // Add left arrow if not on first page group
+        if (startPage > 1) {
+          const leftArrow = document.createElement('button');
+          leftArrow.className = 'pagination-button';
+          leftArrow.innerHTML = '←';
+          leftArrow.onclick = () => {
+            currentPage = startPage - 1;
+            loadHistory(currentPage);
+          };
+          paginationDiv.appendChild(leftArrow);
+        }
+
+        // Add page buttons
+        for (let i = startPage; i <= endPage; i++) {
           const button = document.createElement('button');
           button.className = `pagination-button ${i === page ? 'active' : ''}`;
           button.textContent = i;
@@ -89,6 +106,18 @@
             loadHistory(i);
           };
           paginationDiv.appendChild(button);
+        }
+
+        // Add right arrow if there are more pages
+        if (endPage < totalPages) {
+          const rightArrow = document.createElement('button');
+          rightArrow.className = 'pagination-button';
+          rightArrow.innerHTML = '→';
+          rightArrow.onclick = () => {
+            currentPage = endPage + 1;
+            loadHistory(currentPage);
+          };
+          paginationDiv.appendChild(rightArrow);
         }
       } catch (error) {
         console.error('Failed to load history:', error);
