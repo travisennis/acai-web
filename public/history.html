@@ -35,13 +35,19 @@
           <button id="backButton" class="back-button">← Back to list</button>
           <div class="detail-grid">
             <div class="detail-section">
-              <h3 class="detail-heading">Prompt:</h3>
+              <div class="detail-header">
+                <h3 class="detail-heading">Prompt:</h3>
+                <button class="copy-button" onclick="copyContent('promptContent')">Copy</button>
+              </div>
               <div class="detail-content">
                 <pre id="promptContent" class="content-text"></pre>
               </div>
             </div>
             <div class="detail-section">
-              <h3 class="detail-heading">Response:</h3>
+              <div class="detail-header">
+                <h3 class="detail-heading">Response:</h3>
+                <button class="copy-button" onclick="copyContent('responseContent')">Copy</button>
+              </div>
               <div class="detail-content">
                 <pre id="responseContent" class="content-text"></pre>
               </div>
@@ -51,6 +57,29 @@
       </div>
     </div>
   </main>
+
+  <style>
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .copy-button {
+      padding: 4px 12px;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+
+    .copy-button:hover {
+      background-color: #e0e0e0;
+    }
+  </style>
 
   <script type="module">
     import {marked} from "https://esm.run/marked";
@@ -142,6 +171,22 @@
     document.getElementById('backButton').onclick = () => {
       document.getElementById('historyList').classList.remove('hidden');
       document.getElementById('detailView').classList.add('hidden');
+    };
+
+    // Copy content to clipboard function
+    window.copyContent = async (elementId) => {
+      const content = document.getElementById(elementId).textContent;
+      try {
+        await navigator.clipboard.writeText(content);
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+      }
     };
 
     // Initial load
