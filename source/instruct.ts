@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { zValidator } from "@hono/zod-validator";
 import {
   type ModelName,
@@ -21,7 +22,6 @@ import {
 import { type CoreMessage, type UserContent, generateText } from "ai";
 import { Hono } from "hono";
 import { z } from "zod";
-import { fileURLToPath } from "node:url";
 
 export const app = new Hono().post(
   "/",
