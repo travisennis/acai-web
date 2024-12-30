@@ -53,7 +53,7 @@ export const app = new Hono().post(
       "messages.jsonl",
     );
 
-    const baseDir = "/users/travisennis/github";
+    const baseDir = "/Users/travisennis/Github";
     const pp = await processPrompt(message, {
       baseDir,
     });
@@ -138,11 +138,11 @@ export const app = new Hono().post(
       temperature: temperature ?? 0.3,
       maxTokens: maxTokens ?? 8192,
       tools: allTools,
-      experimental_activeTools: [],
+      experimental_activeTools: [...objectKeys(fsTools)],
       system:
         "You are a very helpful assistant that is focused on helping solve hard problems.",
       messages,
-      maxSteps: 5,
+      maxSteps: 10,
     });
 
     const result = `${message}\n\n${text}`;
@@ -155,6 +155,10 @@ export const app = new Hono().post(
     );
   },
 );
+
+function objectKeys<T extends object>(obj: T): Array<keyof T> {
+  return Object.keys(obj) as Array<keyof T>;
+}
 
 const BODY_CONTENTS = /<body[^>]*>([\s\S]*?)<\/body>/i;
 async function processPrompt(
