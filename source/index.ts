@@ -9,6 +9,8 @@ import { createNodeWebSocket } from "@hono/node-ws";
 import chatApp from "./chat.ts";
 import instructApp from "./instruct.ts";
 import historyApp from "./history.ts";
+import modesApp from "./modes.ts";
+import generateApp from "./generate.ts";
 
 const app = new Hono();
 
@@ -23,15 +25,15 @@ app.get(
   upgradeWebSocket((c) => {
     return {
       onOpen(event, ws) {
-        console.log(`Open from client: ${event.type}`);
+        console.info(`Open from client: ${event.type}`);
         ws.send("Hello from server!");
       },
       onMessage(event, ws) {
-        console.log(`Message from client: ${event.data}`);
+        console.info(`Message from client: ${event.data}`);
         ws.send("Hello from server!");
       },
       onClose: () => {
-        console.log("Connection closed");
+        console.info("Connection closed");
       },
     };
   }),
@@ -40,6 +42,8 @@ app.get(
 const routes = app
   .route("/instruct", instructApp)
   .route("/chat", chatApp)
+  .route("/modes", modesApp)
+  .route("/generate", generateApp)
   .route("/history", historyApp);
 
 const honoServer = serve(
@@ -49,10 +53,10 @@ const honoServer = serve(
     port: 8080,
   },
   async (info) => {
-    console.log(`Server started: ${info.address}:${info.port}`);
+    console.info(`Server started: ${info.address}:${info.port}`);
 
     if (process.env.REDIS_HOST) {
-      console.log(`Starting redis server: ${process.env.REDIS_HOST}`);
+      console.info(`Starting redis server: ${process.env.REDIS_HOST}`);
       const redisClient = createClient({
         username: process.env.REDIS_USERNAME,
         password: process.env.REDIS_PASSWORD,
@@ -70,7 +74,7 @@ const honoServer = serve(
 
       await redisClient.connect();
 
-      console.log("Starting socket server");
+      console.info("Starting socket server");
       const io = new Server(honoServer, {
         path: "/ws2",
         adapter: createAdapter(redisClient),
