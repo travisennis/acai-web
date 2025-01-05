@@ -98,6 +98,11 @@ body {
   background: rgba(59, 130, 246, 0.08);
 }
 
+.nav-link.active {
+  color: var(--primary);
+  background: rgba(59, 130, 246, 0.08);
+}
+
 .main-content {
   flex: 1;
   padding: 0.5rem;
