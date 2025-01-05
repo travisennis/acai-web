@@ -11,6 +11,7 @@ import instructApp from "./instruct.ts";
 import historyApp from "./history.ts";
 import modesApp from "./modes.ts";
 import generateApp from "./generate.ts";
+import filesApp from "./files.ts";
 
 const app = new Hono();
 
@@ -44,6 +45,7 @@ const routes = app
   .route("/chat", chatApp)
   .route("/modes", modesApp)
   .route("/generate", generateApp)
+  .route("/files", filesApp)
   .route("/history", historyApp);
 
 const honoServer = serve(
