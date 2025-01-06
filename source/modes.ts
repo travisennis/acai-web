@@ -1,5 +1,3 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { openai } from "@ai-sdk/openai";
 import { zValidator } from "@hono/zod-validator";
 import {
@@ -23,7 +21,8 @@ import {
   selfConsistency,
   tot,
 } from "@travisennis/ai-sdk-ext/optim";
-import { type CoreMessage, type UserContent, generateText } from "ai";
+import { join } from "@travisennis/stdlib/desm";
+import { generateText } from "ai";
 import { Hono } from "hono";
 import { z } from "zod";
 import { processPrompt } from "./commands.ts";
@@ -51,9 +50,8 @@ export const app = new Hono().post(
     const chosenMode = mode;
 
     // Define the path to the JSONL file, you can change this to your desired local path
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const MESSAGES_FILE_PATH = path.join(
-      __dirname,
+    const MESSAGES_FILE_PATH = join(
+      import.meta.url,
       "..",
       "data",
       "messages.jsonl",
