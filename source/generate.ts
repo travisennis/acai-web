@@ -5,8 +5,8 @@ import {
   isSupportedModel,
   languageModel,
   wrapLanguageModel,
-} from "@travisennis/ai-sdk-ext";
-import { auditMessage, log, usage } from "@travisennis/ai-sdk-ext/middleware";
+} from "@travisennis/acai-core";
+import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
 import { generateText, type LanguageModel } from "ai";
 import { type Env, Hono } from "hono";
 import { z } from "zod";

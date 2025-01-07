@@ -4,8 +4,8 @@ import {
   isSupportedModel,
   languageModel,
   wrapLanguageModel,
-} from "@travisennis/ai-sdk-ext";
-import { auditMessage, log, usage } from "@travisennis/ai-sdk-ext/middleware";
+} from "@travisennis/acai-core";
+import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
 import {
   createBrainstormingTools,
   createCodeInterpreterTool,
@@ -16,14 +16,16 @@ import {
   createSequentialThinkingTool,
   createUrlTools,
   READ_ONLY,
-} from "@travisennis/ai-sdk-ext/tools";
+} from "@travisennis/acai-core/tools";
 import { join } from "@travisennis/stdlib/desm";
+import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { type CoreMessage, type UserContent, generateText } from "ai";
 import { Hono } from "hono";
 import { match } from "ts-pattern";
 import { z } from "zod";
 import { processPrompt } from "./commands.ts";
+import path from "node:path";
 
 const planningSystemPrompt = `You are a senior software architect and project planner specialized in breaking down complex software tasks into manageable steps. Your role is to:
 
@@ -122,14 +124,10 @@ export const app = new Hono().post(
         ? (mode as (typeof modes)[number])
         : "normal";
 
-    // Define the path to the JSONL file, you can change this to your desired local path
     const MEMORY_FILE_PATH = join(import.meta.url, "..", "data", "memory.json");
-    const MESSAGES_FILE_PATH = join(
-      import.meta.url,
-      "..",
-      "data",
-      "messages.jsonl",
-    );
+
+    const stateDir = envPaths("acai").state;
+    const MESSAGES_FILE_PATH = path.join(stateDir, "messages.jsonl");
 
     const baseDir = "/Users/travisennis/Github";
     const pp = await processPrompt(message, {

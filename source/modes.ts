@@ -5,8 +5,8 @@ import {
   isSupportedModel,
   languageModel,
   wrapLanguageModel,
-} from "@travisennis/ai-sdk-ext";
-import { auditMessage, log, usage } from "@travisennis/ai-sdk-ext/middleware";
+} from "@travisennis/acai-core";
+import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
 import {
   bon,
   cot,
@@ -20,7 +20,7 @@ import {
   roundTripOptimization,
   selfConsistency,
   tot,
-} from "@travisennis/ai-sdk-ext/optim";
+} from "@travisennis/acai-core/optim";
 import { join } from "@travisennis/stdlib/desm";
 import { generateText } from "ai";
 import { Hono } from "hono";
