@@ -33,28 +33,57 @@ interface PaginatedResult {
   };
 }
 
-async function getTotalLines(filePath: string): Promise<number> {
-  if (!existsSync(filePath)) {
-    return 0;
+async function getHistoryFiles(stateDir: string): Promise<string[]> {
+  const files: string[] = [];
+  const baseFile = path.join(stateDir, "messages.jsonl");
+
+  if (existsSync(baseFile)) {
+    files.push(baseFile);
   }
-  const content = await fs.readFile(filePath, "utf-8");
-  return content.trim().split("\n").length;
+
+  // Find all rolled over files (messages-N.jsonl)
+  const dirEntries = await fs.readdir(stateDir);
+  const rolledFiles = dirEntries
+    .filter((file) => /^messages-\d+\.jsonl$/.test(file))
+    .sort((a, b) => {
+      const numA = Number.parseInt(
+        a.match(/messages-(\d+)\.jsonl/)?.[1] || "0",
+      );
+      const numB = Number.parseInt(
+        b.match(/messages-(\d+)\.jsonl/)?.[1] || "0",
+      );
+      return numB - numA; // Sort in descending order (newest first)
+    })
+    .map((file) => path.join(stateDir, file));
+
+  return [...files, ...rolledFiles];
+}
+
+async function readLines(files: string[]): Promise<string[]> {
+  const allLines: string[] = [];
+
+  // Read all files and combine their lines
+  for (const file of files) {
+    console.dir(file);
+    if (existsSync(file)) {
+      const content = await fs.readFile(file, "utf-8");
+      allLines.push(...content.trim().split("\n").reverse());
+    }
+  }
+
+  return allLines.reverse();
 }
 
 async function readPaginatedLines(
-  filePath: string,
+  allLines: string[],
   page: number,
   pageSize: number,
 ): Promise<Interaction[]> {
-  if (!existsSync(filePath)) {
-    return [];
-  }
+  const startIndex = Math.max(allLines.length - page * pageSize, 0);
+  const endIndex = Math.max(allLines.length - (page - 1) * pageSize, 0);
+  const selectedLines = allLines.slice(startIndex, endIndex);
 
-  const content = await fs.readFile(filePath, "utf-8");
-  const lines = content.trim().split("\n");
-  const startIndex = Math.max(lines.length - page * pageSize, 0);
-  const endIndex = Math.max(lines.length - (page - 1) * pageSize, 0);
-  const selectedLines = lines.slice(startIndex, endIndex);
+  console.dir(selectedLines[0]);
 
   return selectedLines.map((line, index) => ({
     ...JSON.parse(line),
@@ -62,22 +91,13 @@ async function readPaginatedLines(
   }));
 }
 
-async function readSpecificLine(
-  filePath: string,
-  lineNumber: number,
-): Promise<Interaction | null> {
-  if (!existsSync(filePath)) {
-    return null;
-  }
-
-  const content = await fs.readFile(filePath, "utf-8");
-  const lines = content.trim().split("\n");
-
-  if (lineNumber < 1 || lineNumber > lines.length) {
-    return null;
-  }
-
-  return JSON.parse(lines[lineNumber - 1]);
+function readSpecificLine(lines: string[], lineNumber: number): Interaction {
+  const line = lines.at(lineNumber - 1);
+  const interaction = line ? JSON.parse(line) : "Not found.";
+  return {
+    ...interaction,
+    id: lineNumber,
+  };
 }
 
 const querySchema = z.object({
@@ -90,12 +110,15 @@ app
     try {
       const { page, pageSize } = c.req.valid("query");
       const stateDir = envPaths("acai").state;
-      const filePath = path.join(stateDir, "messages.jsonl");
 
-      const totalItems = await getTotalLines(filePath);
+      const files = await getHistoryFiles(stateDir);
+
+      const lines = await readLines(files);
+
+      const totalItems = lines.length;
       const totalPages = Math.ceil(totalItems / pageSize);
 
-      const interactions = await readPaginatedLines(filePath, page, pageSize);
+      const interactions = await readPaginatedLines(lines, page, pageSize);
 
       const formattedInteractions = interactions.map((interaction) => {
         return {
@@ -130,9 +153,12 @@ app
       }
 
       const stateDir = envPaths("acai").state;
-      const filePath = path.join(stateDir, "messages.jsonl");
 
-      const interaction = await readSpecificLine(filePath, id);
+      const files = await getHistoryFiles(stateDir);
+
+      const lines = await readLines(files);
+
+      const interaction = readSpecificLine(lines, id);
 
       if (!interaction) {
         return c.json({ error: "Interaction not found" }, 404);
