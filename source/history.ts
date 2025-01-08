@@ -5,6 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import type { UserContent } from "ai";
 import { Hono } from "hono";
 import { z } from "zod";
+import envPaths from "@travisennis/stdlib/env";
 
 const app = new Hono();
 
@@ -88,7 +89,8 @@ app
   .get("/", zValidator("query", querySchema), async (c) => {
     try {
       const { page, pageSize } = c.req.valid("query");
-      const filePath = path.join("data", "messages.jsonl");
+      const stateDir = envPaths("acai").state;
+      const filePath = path.join(stateDir, "messages.jsonl");
 
       const totalItems = await getTotalLines(filePath);
       const totalPages = Math.ceil(totalItems / pageSize);
@@ -127,7 +129,9 @@ app
         return c.json({ error: "Invalid ID" }, 400);
       }
 
-      const filePath = path.join("data", "messages.jsonl");
+      const stateDir = envPaths("acai").state;
+      const filePath = path.join(stateDir, "messages.jsonl");
+
       const interaction = await readSpecificLine(filePath, id);
 
       if (!interaction) {
