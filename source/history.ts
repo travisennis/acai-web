@@ -64,7 +64,6 @@ async function readLines(files: string[]): Promise<string[]> {
 
   // Read all files and combine their lines
   for (const file of files) {
-    console.dir(file);
     if (existsSync(file)) {
       const content = await fs.readFile(file, "utf-8");
       allLines.push(...content.trim().split("\n").reverse());
@@ -82,8 +81,6 @@ async function readPaginatedLines(
   const startIndex = Math.max(allLines.length - page * pageSize, 0);
   const endIndex = Math.max(allLines.length - (page - 1) * pageSize, 0);
   const selectedLines = allLines.slice(startIndex, endIndex);
-
-  console.dir(selectedLines[0]);
 
   return selectedLines.map((line, index) => ({
     ...JSON.parse(line),
