@@ -112,14 +112,6 @@
         if (model === 'anthropic:sonnet') option.selected = true;
         modelSelect.appendChild(option);
       });
-
-      // Populate mode options
-      MODES.forEach(mode => {
-        const option = document.createElement('option');
-        option.value = mode.value;
-        option.textContent = mode.label;
-        modeSelect.appendChild(option);
-      });
     }
 
     function setLoading(loading) {
