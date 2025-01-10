@@ -79,18 +79,6 @@
   <script type="module">
     import {marked} from "https://esm.run/marked";
 
-    const MODELS = [
-      "anthropic:sonnet",
-      "anthropic:haiku",
-      "openai:gpt-4o",
-      "openai:gpt-4o-mini",
-      "openai:o1",
-      "openai:o1-mini",
-      "google:pro",
-      "google:flash",
-      "google:flash2"
-    ];
-
     const MODES = [
       {value: "instruct", label: "Normal"},
       {value: "bon", label: "Best-of-N"},
@@ -104,13 +92,26 @@
     const messages = [];
     let isLoading = false;
 
+    // Fetch config from server
+    async function fetchConfig() {
+      try {
+        const response = await fetch('/config');
+        const config = await response.json();
+        return config;
+      } catch (error) {
+        console.error('Error fetching config:', error);
+        return {};
+      }
+    }
+
     // Initialize select options
-    function initializeSelects() {
+    async function initializeSelects() {
+      const config = await fetchConfig();
       const modelSelect = document.getElementById('model');
       const modeSelect = document.getElementById('mode');
 
       // Populate model options
-      MODELS.forEach(model => {
+      config.models.forEach(model => {
         const option = document.createElement('option');
         option.value = model;
         option.textContent = model;
@@ -231,8 +232,8 @@
     }
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      initializeSelects();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initializeSelects();
       document.getElementById('chatForm').addEventListener('submit', handleSubmit);
       document.getElementById("message").addEventListener('keydown', handleKeyDown);
     });  

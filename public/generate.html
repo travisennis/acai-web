@@ -42,16 +42,6 @@
                 <div class="settings-group">
                   <label for="model" class="settings-label">Model</label>
                   <select id="model" name="model" class="settings-input">
-                    <option value="anthropic:sonnet" selected>anthropic:sonnet</option>
-                    <option value="anthropic:haiku">anthropic:haiku</option>
-                    <option value="openai:gpt-4o">openai:gpt-4o</option>
-                    <option value="openai:gpt-4o-mini">openai:gpt-4o-mini</option>
-                    <option value="openai:o1">openai:o1</option>
-                    <option value="openai:o1-mini">openai:o1-mini</option>
-                    <option value="google:pro">google:pro</option>
-                    <option value="google:flash">google:flash</option>
-                    <option value="google:flash2">google:flash2</option>
-                    <option value="google:flash2thinking">google:flash2thinking</option>
                   </select>
                 </div>
 
@@ -76,13 +66,42 @@
   </main>
 
   <script type="module">
-    // JavaScript remains the same as in your original code
     const form = document.getElementById('chatForm');
     const messageTextarea = document.getElementById('message');
     const submitButton = document.getElementById('submitButton');
     const errorDiv = document.getElementById('error');
 
     let isLoading = false;
+
+    // Fetch config from server
+    async function fetchConfig() {
+      try {
+        const response = await fetch('/config');
+        const config = await response.json();
+        return config;
+      } catch (error) {
+        console.error('Error fetching config:', error);
+        return {};
+      }
+    }
+
+    // Initialize select options
+    async function initializeSelects() {
+      const config = await fetchConfig();
+      const modelSelect = document.getElementById('model');
+
+      // Clear existing options
+      modelSelect.innerHTML = '';
+
+      // Populate model options
+      config.models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        option.textContent = model;
+        if (model === 'anthropic:sonnet') option.selected = true;
+        modelSelect.appendChild(option);
+      });
+    }
 
     function setLoading(loading) {
       isLoading = loading;
@@ -121,8 +140,7 @@
         message: formData.get('message'),
         model: formData.get('model'),
         maxTokens: Number(formData.get('maxTokens')),
-        temperature: Number(formData.get('temperature')),
-        mode: formData.get('mode')
+        temperature: Number(formData.get('temperature'))
       };
 
       try {
@@ -152,8 +170,12 @@
       }
     }
 
-    form.addEventListener('submit', handleSubmit);
-    messageTextarea.addEventListener('keydown', handleKeyDown);
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initializeSelects();
+      form.addEventListener('submit', handleSubmit);
+      messageTextarea.addEventListener('keydown', handleKeyDown);
+    });
   </script>
 </body>
 
