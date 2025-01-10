@@ -10,6 +10,7 @@ import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
 import { generateText, type LanguageModel } from "ai";
 import { type Env, Hono } from "hono";
 import { z } from "zod";
+import envPaths from "@travisennis/stdlib/env";
 
 const app = new Hono<Env>();
 
@@ -25,17 +26,21 @@ app.post(
     }),
   ),
   async (c) => {
-    const { model, maxTokens, temperature, message } = c.req.valid("json");
+    const { model, message } = c.req.valid("json");
 
     const chosenModel: ModelName = isSupportedModel(model)
       ? model
       : "anthropic:sonnet";
 
+    // Define the path to the JSONL file, you can change this to your desired local path
+    const stateDir = envPaths("acai").state;
+    const MESSAGES_FILE_PATH = path.join(stateDir, "messages.jsonl");
+
     const langModel = wrapLanguageModel(
       languageModel(chosenModel),
       log,
       usage,
-      auditMessage({ path: path.join("data", "messages.jsonl") }),
+      auditMessage({ path: MESSAGES_FILE_PATH }),
     );
 
     // Execute the loop

@@ -7,6 +7,7 @@ import {
   wrapLanguageModel,
 } from "@travisennis/acai-core";
 import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
+import envPaths from "@travisennis/stdlib/env";
 import { type CoreMessage, generateText } from "ai";
 import { type Env, Hono } from "hono";
 import { z } from "zod";
@@ -24,16 +25,17 @@ app.post(
       maxTokens: z.coerce.number().optional(),
       temperature: z.coerce.number().optional(),
       message: z.string(),
-      mode: z.string().optional(),
     }),
   ),
   async (c) => {
-    const { model, maxTokens, temperature, message, mode } =
-      c.req.valid("json");
+    const { model, maxTokens, temperature, message } = c.req.valid("json");
 
     const chosenModel: ModelName = isSupportedModel(model)
       ? model
       : "anthropic:sonnet";
+
+    const stateDir = envPaths("acai").state;
+    const MESSAGES_FILE_PATH = path.join(stateDir, "messages.jsonl");
 
     messages.push({
       role: "user",
@@ -45,7 +47,7 @@ app.post(
         languageModel(chosenModel),
         log,
         usage,
-        auditMessage({ path: path.join("data", "messages.jsonl") }),
+        auditMessage({ path: MESSAGES_FILE_PATH }),
       ),
       temperature: temperature ?? 0.3,
       maxTokens: maxTokens ?? 8192,

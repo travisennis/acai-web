@@ -1,3 +1,4 @@
+import path from "node:path";
 import { openai } from "@ai-sdk/openai";
 import { zValidator } from "@hono/zod-validator";
 import {
@@ -21,7 +22,7 @@ import {
   selfConsistency,
   tot,
 } from "@travisennis/acai-core/optim";
-import { join } from "@travisennis/stdlib/desm";
+import envPaths from "@travisennis/stdlib/env";
 import { generateText } from "ai";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -50,12 +51,8 @@ export const app = new Hono().post(
     const chosenMode = mode;
 
     // Define the path to the JSONL file, you can change this to your desired local path
-    const MESSAGES_FILE_PATH = join(
-      import.meta.url,
-      "..",
-      "data",
-      "messages.jsonl",
-    );
+    const stateDir = envPaths("acai").state;
+    const MESSAGES_FILE_PATH = path.join(stateDir, "messages.jsonl");
 
     const baseDir = "/Users/travisennis/Github";
     const pp = await processPrompt(message, {
