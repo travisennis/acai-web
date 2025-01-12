@@ -1,3 +1,5 @@
+import path from "node:path";
+import type { GoogleGenerativeAIProviderMetadata } from "@ai-sdk/google";
 import { zValidator } from "@hono/zod-validator";
 import {
   type ModelName,
@@ -7,6 +9,7 @@ import {
 } from "@travisennis/acai-core";
 import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
 import {
+  READ_ONLY,
   createBrainstormingTools,
   createCodeInterpreterTool,
   createFileSystemTools,
@@ -15,7 +18,6 @@ import {
   createRaindropTools,
   createSequentialThinkingTool,
   createUrlTools,
-  READ_ONLY,
 } from "@travisennis/acai-core/tools";
 import { join } from "@travisennis/stdlib/desm";
 import envPaths from "@travisennis/stdlib/env";
@@ -25,7 +27,6 @@ import { Hono } from "hono";
 import { match } from "ts-pattern";
 import { z } from "zod";
 import { processPrompt } from "./commands.ts";
-import path from "node:path";
 
 const deepThinkSystemPrompt = `
 You are an assistant that engages in extremely thorough, self-questioning reasoning. Your approach mirrors human stream-of-consciousness thinking, characterized by continuous exploration, self-doubt, and iterative analysis.
@@ -336,7 +337,7 @@ export const app = new Hono().post(
       .with("review", () => codeReviewerSystemPrompt)
       .exhaustive();
 
-    const { text } = await generateText({
+    const { text, experimental_providerMetadata } = await generateText({
       model: wrapLanguageModel(
         languageModel(chosenModel),
         log,
@@ -351,6 +352,17 @@ export const app = new Hono().post(
       messages,
       maxSteps: 10,
     });
+
+    // access the grounding metadata. Casting to the provider metadata type
+    // is optional but provides autocomplete and type safety.
+    const metadata = experimental_providerMetadata?.google as
+      | GoogleGenerativeAIProviderMetadata
+      | undefined;
+    const groundingMetadata = metadata?.groundingMetadata;
+    const safetyRatings = metadata?.safetyRatings;
+
+    console.dir(groundingMetadata);
+    console.dir(safetyRatings);
 
     const result = `${message}\n\n${text}`;
 
