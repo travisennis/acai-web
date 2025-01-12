@@ -18,6 +18,7 @@ import {
   createRaindropTools,
   createSequentialThinkingTool,
   createUrlTools,
+  createCodeTools,
 } from "@travisennis/acai-core/tools";
 import { join } from "@travisennis/stdlib/desm";
 import envPaths from "@travisennis/stdlib/env";
@@ -272,6 +273,10 @@ export const app = new Hono().post(
       workingDir: pp.projectDir ?? `${baseDir}/temp`,
     });
 
+    const codeTools = createCodeTools({
+      baseDir: pp.projectDir ?? `${baseDir}/temp`,
+    });
+
     const codeInterpreterTool = createCodeInterpreterTool({});
 
     const raindropTools = createRaindropTools({
@@ -287,6 +292,7 @@ export const app = new Hono().post(
     const brainstormingTools = createBrainstormingTools(langModel);
 
     const allTools = {
+      ...codeTools,
       ...fsTools,
       ...gitTools,
       ...codeInterpreterTool,
