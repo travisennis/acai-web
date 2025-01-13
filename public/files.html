@@ -33,7 +33,7 @@
           <div class="left-panel">
             <div class="panel-header">
               <h2>Files</h2>
-              <button id="newFileBtn" class="action-button">New File</button>
+              <button id="newFileBtn" class="action-button">➕ New File</button>
             </div>
             <div id="filesList" class="files-list">
               <!-- Files will be listed here -->
@@ -111,7 +111,7 @@
       selectedFileId = id;
       const file = currentFiles.find(f => f.id === id);
       renderFilesList(); // Update selection visual
-      
+
       const fileDetails = document.getElementById('fileDetails');
       fileDetails.innerHTML = `
         <div class="file-detail-header">
@@ -137,7 +137,7 @@
       const fileContentInput = document.getElementById('fileContent');
 
       modalTitle.textContent = isEdit ? 'Edit File' : 'Create New File';
-      
+
       if (!isEdit) {
         form.reset();
         document.getElementById('fileId').value = '';
@@ -163,15 +163,15 @@
           // Edit existing file
           response = await fetch(`/files/${fileId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content }),
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({content}),
           });
         } else {
           // Create new file
           response = await fetch('/files', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, content }),
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, content}),
           });
         }
 
@@ -194,7 +194,7 @@
       document.getElementById('fileName').value = file.name;
       document.getElementById('fileContent').value = file.content;
       document.getElementById('fileName').disabled = true;
-      
+
       showModal(true);
     }
 
@@ -311,18 +311,25 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+      padding: 0px 20px;
+      background: var(--background-tertiary);
+      border-radius: 8px 8px 0 0;
     }
 
     .file-metadata {
       font-size: 0.9em;
       color: var(--text-secondary);
       margin-bottom: 20px;
+      padding: 0px 20px;
+      background: var(--background-tertiary);
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
     }
 
     .file-content-view {
       background: var(--background-tertiary);
-      padding: 20px;
+      padding: 0px 20px;
       border-radius: 8px;
       white-space: pre-wrap;
     }
@@ -341,7 +348,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
       z-index: 1000;
     }
 
@@ -402,6 +410,19 @@
       background: var(--accent-color);
       color: white;
       font-weight: 500;
+      transition: background-color 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-button:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .action-button:active {
+      transform: translateY(0);
     }
 
     .action-button.delete {
@@ -409,13 +430,48 @@
     }
 
     .cancel-button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
       background: var(--background-tertiary);
       color: var(--text-primary);
+      font-weight: 500;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .cancel-button:hover {
+      background: var(--background-primary);
+      transform: translateY(-1px);
+    }
+
+    .cancel-button:active {
+      transform: translateY(0);
     }
 
     .file-actions {
       display: flex;
       gap: 10px;
+    }
+
+    .submit-button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: var(--accent-color);
+      color: white;
+      font-weight: 500;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .submit-button:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .submit-button:active {
+      transform: translateY(0);
     }
   </style>
 </body>
