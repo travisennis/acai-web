@@ -27,42 +27,50 @@
   <main class="main-content">
     <div class="content-container">
       <div class="files-container">
-        <!-- Create New File Section -->
-        <div class="create-file-section">
-          <h2>Create New File</h2>
-          <form id="createFileForm" class="file-form">
-            <div class="input-group">
-              <input type="text" id="fileName" name="fileName" class="settings-input" placeholder="File name" required>
+        <!-- Main Split View -->
+        <div class="split-view">
+          <!-- Left Panel - File List -->
+          <div class="left-panel">
+            <div class="panel-header">
+              <h2>Files</h2>
+              <button id="newFileBtn" class="action-button">New File</button>
             </div>
-            <div class="input-group">
-              <textarea id="fileContent" name="fileContent" class="settings-input" rows="4" placeholder="File content"
-                required></textarea>
+            <div id="filesList" class="files-list">
+              <!-- Files will be listed here -->
             </div>
-            <button type="submit" class="submit-button">Create File</button>
-          </form>
-        </div>
+          </div>
 
-        <!-- Files List Section -->
-        <div class="files-list-section">
-          <h2>Files</h2>
-          <div id="filesList" class="files-list">
-            <!-- Files will be listed here -->
+          <!-- Right Panel - File Details and Content -->
+          <div class="right-panel">
+            <div id="fileDetails" class="file-details">
+              <div class="no-selection-message">Select a file to view its details</div>
+            </div>
           </div>
         </div>
 
-        <!-- Edit File Section (hidden by default) -->
-        <div id="editFileSection" class="edit-file-section" style="display: none;">
-          <h2>Edit File</h2>
-          <form id="editFileForm" class="file-form">
-            <input type="hidden" id="editFileId">
-            <div class="input-group">
-              <textarea id="editFileContent" name="editFileContent" class="settings-input" rows="4" required></textarea>
+        <!-- Modal for Create/Edit File -->
+        <div id="fileModal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 id="modalTitle">Create New File</h2>
+              <button class="close-button" onclick="closeModal()">&times;</button>
             </div>
-            <div class="button-group">
-              <button type="submit" class="submit-button">Save Changes</button>
-              <button type="button" id="cancelEdit" class="cancel-button">Cancel</button>
-            </div>
-          </form>
+            <form id="fileForm" class="file-form">
+              <input type="hidden" id="fileId">
+              <div class="input-group">
+                <label for="fileName">File Name</label>
+                <input type="text" id="fileName" name="fileName" class="settings-input" required>
+              </div>
+              <div class="input-group">
+                <label for="fileContent">Content</label>
+                <textarea id="fileContent" name="fileContent" class="settings-input" rows="12" required></textarea>
+              </div>
+              <div class="button-group">
+                <button type="submit" class="submit-button">Save</button>
+                <button type="button" class="cancel-button" onclick="closeModal()">Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -70,98 +78,124 @@
 
   <script>
     let currentFiles = [];
+    let selectedFileId = null;
 
     async function loadFiles() {
       try {
         const response = await fetch('/files');
         const files = await response.json();
         currentFiles = files;
-        renderFiles();
+        renderFilesList();
       } catch (error) {
         console.error('Error loading files:', error);
       }
     }
 
-    function renderFiles() {
+    function renderFilesList() {
       const filesListElement = document.getElementById('filesList');
       filesListElement.innerHTML = '';
 
       currentFiles.forEach(file => {
         const fileElement = document.createElement('div');
-        fileElement.className = 'file-item';
+        fileElement.className = `file-list-item ${file.id === selectedFileId ? 'selected' : ''}`;
+        fileElement.onclick = () => selectFile(file.id);
         fileElement.innerHTML = `
-          <div class="file-info">
-            <h3>${file.name}</h3>
-            <p class="file-date">Created: ${new Date(file.createdAt).toLocaleString()}</p>
-            <p class="file-date">Updated: ${new Date(file.updatedAt).toLocaleString()}</p>
-          </div>
-          <div class="file-content">${file.content}</div>
-          <div class="file-actions">
-            <button onclick="editFile('${file.id}')" class="action-button">Edit</button>
-            <button onclick="deleteFile('${file.id}')" class="action-button delete">Delete</button>
-          </div>
+          <div class="file-list-name">${file.name}</div>
+          <div class="file-list-date">${new Date(file.updatedAt).toLocaleDateString()}</div>
         `;
         filesListElement.appendChild(fileElement);
       });
     }
 
-    async function createFile(event) {
+    function selectFile(id) {
+      selectedFileId = id;
+      const file = currentFiles.find(f => f.id === id);
+      renderFilesList(); // Update selection visual
+      
+      const fileDetails = document.getElementById('fileDetails');
+      fileDetails.innerHTML = `
+        <div class="file-detail-header">
+          <h2>${file.name}</h2>
+          <div class="file-actions">
+            <button onclick="editFile('${file.id}')" class="action-button">Edit</button>
+            <button onclick="deleteFile('${file.id}')" class="action-button delete">Delete</button>
+          </div>
+        </div>
+        <div class="file-metadata">
+          <div>Created: ${new Date(file.createdAt).toLocaleString()}</div>
+          <div>Updated: ${new Date(file.updatedAt).toLocaleString()}</div>
+        </div>
+        <div class="file-content-view">${file.content}</div>
+      `;
+    }
+
+    function showModal(isEdit = false) {
+      const modal = document.getElementById('fileModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const form = document.getElementById('fileForm');
+      const fileNameInput = document.getElementById('fileName');
+      const fileContentInput = document.getElementById('fileContent');
+
+      modalTitle.textContent = isEdit ? 'Edit File' : 'Create New File';
+      
+      if (!isEdit) {
+        form.reset();
+        document.getElementById('fileId').value = '';
+        fileNameInput.disabled = false;
+      }
+
+      modal.style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('fileModal').style.display = 'none';
+    }
+
+    async function handleFileSubmit(event) {
       event.preventDefault();
+      const fileId = document.getElementById('fileId').value;
       const name = document.getElementById('fileName').value;
       const content = document.getElementById('fileContent').value;
 
       try {
-        const response = await fetch('/files', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({name, content}),
-        });
+        let response;
+        if (fileId) {
+          // Edit existing file
+          response = await fetch(`/files/${fileId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content }),
+          });
+        } else {
+          // Create new file
+          response = await fetch('/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, content }),
+          });
+        }
 
         if (response.ok) {
-          document.getElementById('createFileForm').reset();
+          closeModal();
           await loadFiles();
         } else {
-          console.error('Failed to create file');
+          console.error('Failed to save file');
         }
       } catch (error) {
-        console.error('Error creating file:', error);
+        console.error('Error saving file:', error);
       }
     }
 
-    async function editFile(id) {
+    function editFile(id) {
       const file = currentFiles.find(f => f.id === id);
       if (!file) return;
 
-      document.getElementById('editFileId').value = id;
-      document.getElementById('editFileContent').value = file.content;
-      document.getElementById('editFileSection').style.display = 'block';
-    }
-
-    async function updateFile(event) {
-      event.preventDefault();
-      const id = document.getElementById('editFileId').value;
-      const content = document.getElementById('editFileContent').value;
-
-      try {
-        const response = await fetch(`/files/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({content}),
-        });
-
-        if (response.ok) {
-          document.getElementById('editFileSection').style.display = 'none';
-          await loadFiles();
-        } else {
-          console.error('Failed to update file');
-        }
-      } catch (error) {
-        console.error('Error updating file:', error);
-      }
+      document.getElementById('fileId').value = id;
+      document.getElementById('fileName').value = file.name;
+      document.getElementById('fileContent').value = file.content;
+      document.getElementById('fileName').disabled = true;
+      
+      showModal(true);
     }
 
     async function deleteFile(id) {
@@ -173,6 +207,10 @@
         });
 
         if (response.ok) {
+          if (selectedFileId === id) {
+            selectedFileId = null;
+            document.getElementById('fileDetails').innerHTML = '<div class="no-selection-message">Select a file to view its details</div>';
+          }
           await loadFiles();
         } else {
           console.error('Failed to delete file');
@@ -185,94 +223,199 @@
     // Event Listeners
     document.addEventListener('DOMContentLoaded', () => {
       loadFiles();
-      document.getElementById('createFileForm').addEventListener('submit', createFile);
-      document.getElementById('editFileForm').addEventListener('submit', updateFile);
-      document.getElementById('cancelEdit').addEventListener('click', () => {
-        document.getElementById('editFileSection').style.display = 'none';
-      });
+      document.getElementById('newFileBtn').addEventListener('click', () => showModal(false));
+      document.getElementById('fileForm').addEventListener('submit', handleFileSubmit);
+
+      // Close modal when clicking outside
+      window.onclick = (event) => {
+        const modal = document.getElementById('fileModal');
+        if (event.target === modal) {
+          closeModal();
+        }
+      };
     });
   </script>
 
   <style>
     .files-container {
-      max-width: 800px;
-      margin: 0 auto;
+      height: calc(100vh - 60px);
       padding: 20px;
     }
 
-    .file-form {
-      margin-bottom: 30px;
+    .split-view {
+      display: flex;
+      gap: 20px;
+      height: 100%;
+      background: var(--background-secondary);
+      border-radius: 8px;
+      overflow: hidden;
     }
 
-    .input-group {
-      margin-bottom: 15px;
+    .left-panel {
+      width: 300px;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .right-panel {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .panel-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      margin: 0;
     }
 
     .files-list {
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+
+    .file-list-item {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .file-list-item:hover {
+      background-color: var(--background-tertiary);
+    }
+
+    .file-list-item.selected {
+      background-color: var(--background-tertiary);
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .file-list-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .file-list-date {
+      font-size: 0.8em;
+      color: var(--text-secondary);
+    }
+
+    .file-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .file-metadata {
+      font-size: 0.9em;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .file-content-view {
+      background: var(--background-tertiary);
+      padding: 20px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+
+    .no-selection-message {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 40px;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .modal-content {
+      position: relative;
+      background-color: var(--background-primary);
+      margin: 50px auto;
+      padding: 20px;
+      width: 80%;
+      max-width: 700px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .file-form {
       display: flex;
       flex-direction: column;
       gap: 15px;
     }
 
-    .file-item {
-      background: var(--background-secondary);
-      border-radius: 8px;
-      padding: 15px;
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
 
-    .file-info {
-      margin-bottom: 10px;
-    }
-
-    .file-info h3 {
-      margin: 0;
-      color: var(--text-primary);
-    }
-
-    .file-date {
-      font-size: 0.8em;
+    .input-group label {
       color: var(--text-secondary);
-      margin: 5px 0;
     }
 
-    .file-content {
-      background: var(--background-tertiary);
-      padding: 10px;
-      border-radius: 4px;
-      margin: 10px 0;
-      white-space: pre-wrap;
-    }
-
-    .file-actions {
+    .button-group {
       display: flex;
       gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
     }
 
     .action-button {
-      padding: 5px 15px;
+      padding: 8px 16px;
       border-radius: 4px;
       border: none;
       cursor: pointer;
-      background: var(--background-tertiary);
-      color: var(--text-primary);
+      background: var(--accent-color);
+      color: white;
+      font-weight: 500;
     }
 
     .action-button.delete {
       background: var(--error);
     }
 
-    .button-group {
-      display: flex;
-      gap: 10px;
-    }
-
     .cancel-button {
       background: var(--background-tertiary);
       color: var(--text-primary);
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 10px;
     }
   </style>
 </body>
