@@ -41,8 +41,7 @@
               <div class="settings-container">
                 <div class="settings-group">
                   <label for="model" class="settings-label">Model</label>
-                  <select id="model" name="model" class="settings-input">
-                  </select>
+                  <select id="model" name="model" class="settings-input"></select>
                 </div>
 
                 <div class="settings-group">
@@ -59,15 +58,7 @@
 
                 <div class="settings-group">
                   <label for="mode" class="settings-label">Mode</label>
-                  <select id="mode" name="mode" class="settings-input">
-                    <option value="normal" selected>Normal</option>
-                    <option value="research">Research</option>
-                    <option value="think">Think</option>
-                    <option value="deepthink">Deep Think</option>
-                    <option value="plan">Plan</option>
-                    <option value="edit">Edit</option>
-                    <option value="review">Review</option>
-                  </select>
+                  <select id="mode" name="mode" class="settings-input"></select>
                 </div>
               </div>
             </div>
@@ -87,7 +78,7 @@
     let isLoading = false;
 
     // Fetch config from server
-    async function fetchConfig() {
+    async function fetchGlobalConfig() {
       try {
         const response = await fetch('/config');
         const config = await response.json();
@@ -98,20 +89,40 @@
       }
     }
 
+    async function fetchConfig() {
+      try {
+        const response = await fetch('/instruct');
+        const config = await response.json();
+        return config;
+      } catch (error) {
+        console.error('Error fetching endpoint config:', error);
+        return {};
+      }
+    }
+
     // Initialize select options
     async function initializeSelects() {
+      const globalConfig = await fetchGlobalConfig();
       const config = await fetchConfig();
       const modelSelect = document.getElementById('model');
       const modeSelect = document.getElementById('mode');
 
       // Populate model options
-      config.models.forEach(model => {
+      globalConfig.models.forEach(model => {
         const option = document.createElement('option');
         option.value = model;
         option.textContent = model;
         if (model === 'anthropic:sonnet') option.selected = true;
         modelSelect.appendChild(option);
       });
+
+      config.modes.forEach(mode => {
+        const option = document.createElement('option');
+        option.value = mode;
+        option.textContent = mode;
+        if (model === 'normal') option.selected = true;
+        modeSelect.appendChild(option);
+      })
     }
 
     function setLoading(loading) {
