@@ -7,7 +7,8 @@ import { z } from "zod";
 
 const app = new Hono();
 
-const FILES_DIR = path.join("data", "files");
+const baseDir = "/Users/travisennis/Github";
+const FILES_DIR = path.join(baseDir, "files");
 
 // Ensure files directory exists
 if (!existsSync(FILES_DIR)) {
