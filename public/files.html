@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Files</title>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="/public/style.css">
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <div class="nav-links">
+        <a href="/public/instruct.html" class="nav-link">Instruct</a>
+        <a href="/public/chat.html" class="nav-link">Chat</a>
+        <a href="/public/modes.html" class="nav-link">Modes</a>
+        <a href="/public/generate.html" class="nav-link">Generate</a>
+        <a href="/public/files.html" class="nav-link active">Files</a>
+        <a href="/public/history.html" class="nav-link">History</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="content-container">
+      <div class="files-container">
+        <!-- Create New File Section -->
+        <div class="create-file-section">
+          <h2>Create New File</h2>
+          <form id="createFileForm" class="file-form">
+            <div class="input-group">
+              <input type="text" id="fileName" name="fileName" class="settings-input" placeholder="File name" required>
+            </div>
+            <div class="input-group">
+              <textarea id="fileContent" name="fileContent" class="settings-input" rows="4" placeholder="File content"
+                required></textarea>
+            </div>
+            <button type="submit" class="submit-button">Create File</button>
+          </form>
+        </div>
+
+        <!-- Files List Section -->
+        <div class="files-list-section">
+          <h2>Files</h2>
+          <div id="filesList" class="files-list">
+            <!-- Files will be listed here -->
+          </div>
+        </div>
+
+        <!-- Edit File Section (hidden by default) -->
+        <div id="editFileSection" class="edit-file-section" style="display: none;">
+          <h2>Edit File</h2>
+          <form id="editFileForm" class="file-form">
+            <input type="hidden" id="editFileId">
+            <div class="input-group">
+              <textarea id="editFileContent" name="editFileContent" class="settings-input" rows="4" required></textarea>
+            </div>
+            <div class="button-group">
+              <button type="submit" class="submit-button">Save Changes</button>
+              <button type="button" id="cancelEdit" class="cancel-button">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentFiles = [];
+
+    async function loadFiles() {
+      try {
+        const response = await fetch('/files');
+        const files = await response.json();
+        currentFiles = files;
+        renderFiles();
+      } catch (error) {
+        console.error('Error loading files:', error);
+      }
+    }
+
+    function renderFiles() {
+      const filesListElement = document.getElementById('filesList');
+      filesListElement.innerHTML = '';
+
+      currentFiles.forEach(file => {
+        const fileElement = document.createElement('div');
+        fileElement.className = 'file-item';
+        fileElement.innerHTML = `
+          <div class="file-info">
+            <h3>${file.name}</h3>
+            <p class="file-date">Created: ${new Date(file.createdAt).toLocaleString()}</p>
+            <p class="file-date">Updated: ${new Date(file.updatedAt).toLocaleString()}</p>
+          </div>
+          <div class="file-content">${file.content}</div>
+          <div class="file-actions">
+            <button onclick="editFile('${file.id}')" class="action-button">Edit</button>
+            <button onclick="deleteFile('${file.id}')" class="action-button delete">Delete</button>
+          </div>
+        `;
+        filesListElement.appendChild(fileElement);
+      });
+    }
+
+    async function createFile(event) {
+      event.preventDefault();
+      const name = document.getElementById('fileName').value;
+      const content = document.getElementById('fileContent').value;
+
+      try {
+        const response = await fetch('/files', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({name, content}),
+        });
+
+        if (response.ok) {
+          document.getElementById('createFileForm').reset();
+          await loadFiles();
+        } else {
+          console.error('Failed to create file');
+        }
+      } catch (error) {
+        console.error('Error creating file:', error);
+      }
+    }
+
+    async function editFile(id) {
+      const file = currentFiles.find(f => f.id === id);
+      if (!file) return;
+
+      document.getElementById('editFileId').value = id;
+      document.getElementById('editFileContent').value = file.content;
+      document.getElementById('editFileSection').style.display = 'block';
+    }
+
+    async function updateFile(event) {
+      event.preventDefault();
+      const id = document.getElementById('editFileId').value;
+      const content = document.getElementById('editFileContent').value;
+
+      try {
+        const response = await fetch(`/files/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({content}),
+        });
+
+        if (response.ok) {
+          document.getElementById('editFileSection').style.display = 'none';
+          await loadFiles();
+        } else {
+          console.error('Failed to update file');
+        }
+      } catch (error) {
+        console.error('Error updating file:', error);
+      }
+    }
+
+    async function deleteFile(id) {
+      if (!confirm('Are you sure you want to delete this file?')) return;
+
+      try {
+        const response = await fetch(`/files/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          await loadFiles();
+        } else {
+          console.error('Failed to delete file');
+        }
+      } catch (error) {
+        console.error('Error deleting file:', error);
+      }
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFiles();
+      document.getElementById('createFileForm').addEventListener('submit', createFile);
+      document.getElementById('editFileForm').addEventListener('submit', updateFile);
+      document.getElementById('cancelEdit').addEventListener('click', () => {
+        document.getElementById('editFileSection').style.display = 'none';
+      });
+    });
+  </script>
+
+  <style>
+    .files-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .file-form {
+      margin-bottom: 30px;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .files-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .file-item {
+      background: var(--background-secondary);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .file-info {
+      margin-bottom: 10px;
+    }
+
+    .file-info h3 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+
+    .file-date {
+      font-size: 0.8em;
+      color: var(--text-secondary);
+      margin: 5px 0;
+    }
+
+    .file-content {
+      background: var(--background-tertiary);
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      white-space: pre-wrap;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .action-button {
+      padding: 5px 15px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: var(--background-tertiary);
+      color: var(--text-primary);
+    }
+
+    .action-button.delete {
+      background: var(--error);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .cancel-button {
+      background: var(--background-tertiary);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</body>
+
+</html>
