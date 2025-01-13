@@ -24,12 +24,21 @@ export async function processPrompt(
     } else if (line.startsWith("@list-prompts")) {
       fileDirectiveFound = true;
 
-      const dirs = await fs.readdir(`${baseDir}/prompts`);
+      const files = await fs.readdir(`${baseDir}/prompts`);
 
-      processedLines.push(`Prompts:\n${dirs.join("\n")}\n`);
+      const fileNamesWithoutExtension = files.map(
+        (file) => path.parse(file).name,
+      );
+
+      processedLines.push(
+        `Prompts:\n${fileNamesWithoutExtension.join("\n")}\n`,
+      );
     } else if (line.startsWith("@prompt ")) {
       fileDirectiveFound = true;
       const promptName = line.replace("@prompt ", "").trim();
+      if (!promptName) {
+        throw new Error("Prompt name cannot be empty");
+      }
 
       const f = await fs.readFile(
         `${baseDir}/prompts/${promptName}.md`,
@@ -41,11 +50,34 @@ export async function processPrompt(
       fileDirectiveFound = true;
       const filePath = line.replace("@file ", "").trim();
       const fileExtension = filePath.split(".").pop();
+      const codeBlockName =
+        {
+          js: "javascript",
+          ts: "typescript",
+          py: "python",
+          rb: "ruby",
+          java: "java",
+          cpp: "cpp",
+          cs: "csharp",
+          go: "go",
+          rs: "rust",
+          php: "php",
+          html: "html",
+          css: "css",
+          json: "json",
+          yml: "yaml",
+          yaml: "yaml",
+          md: "markdown",
+          sql: "sql",
+          sh: "bash",
+          bash: "bash",
+          txt: "text",
+        }[fileExtension ?? ""] || filePath.split(".").pop();
 
       const f = await fs.readFile(`${baseDir}${filePath}`.trim(), "utf8");
 
       processedLines.push(
-        `File: ${filePath}\n\`\`\` ${fileExtension}\n${f}\n\`\`\``,
+        `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
       );
     } else if (line.startsWith("@files ")) {
       fileDirectiveFound = true;
