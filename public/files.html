@@ -312,9 +312,11 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
-      padding: 0px 20px;
+      padding: 16px 20px;
       background: var(--background-tertiary);
       border-radius: 8px 8px 0 0;
+      border: 1px solid var(--border-color);
+      border-bottom: none;
     }
 
     .file-metadata {
@@ -355,13 +357,14 @@
 
     .modal-content {
       position: relative;
-      background-color: var(--background-primary);
+      background-color: var(--background-secondary);
       margin: 50px auto;
       padding: 20px;
       width: 80%;
       max-width: 700px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
     }
 
     .modal-header {
@@ -377,18 +380,47 @@
       font-size: 24px;
       cursor: pointer;
       color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .close-button:hover {
+      background-color: var(--background-tertiary);
+      color: var(--text-primary);
     }
 
     .file-form {
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 20px;
+    }
+
+    .file-form input[type='text'],
+    .file-form textarea {
+      background-color: var(--background-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+
+    .file-form input[type='text']:focus,
+    .file-form textarea:focus {
+      border-color: var(--accent-color);
+      outline: none;
+      box-shadow: 0 0 0 2px var(--accent-color-alpha);
     }
 
     .input-group {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 8px;
     }
 
     .input-group label {
@@ -404,20 +436,22 @@
 
     .action-button {
       padding: 8px 16px;
-      border-radius: 4px;
-      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
       cursor: pointer;
-      background: transparent;
-      color: var(--accent-color);
+      background: var(--background-tertiary);
+      color: var(--text-primary);
       font-weight: 500;
       transition: all 0.2s;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      height: 36px;
     }
 
     .action-button:hover {
-      background-color: var(--accent-color);
+      background-color: var(--background-primary);
+      border-color: var(--accent-color);
       color: var(--accent-color);
       transform: translateY(-1px);
     }
@@ -427,9 +461,9 @@
     }
 
     .action-button.delete {
-      border-color: var(--error);
+      border-color: var(--border-color);
       color: var(--error);
-      background: var(--background-secondary);
+      background: var(--background-tertiary);
     }
 
     .action-button.delete:hover {
@@ -439,13 +473,14 @@
 
     .cancel-button {
       padding: 8px 16px;
-      border-radius: 4px;
+      border-radius: 6px;
       border: 1px solid var(--border-color);
       cursor: pointer;
       background: var(--background-tertiary);
       color: var(--text-primary);
       font-weight: 500;
-      transition: background-color 0.2s, transform 0.1s;
+      transition: all 0.2s;
+      height: 36px;
     }
 
     .cancel-button:hover {
@@ -464,13 +499,14 @@
 
     .submit-button {
       padding: 8px 16px;
-      border-radius: 4px;
-      border: none;
+      border-radius: 6px;
+      border: 1px solid var(--accent-color);
       cursor: pointer;
       background: var(--accent-color);
       color: white;
       font-weight: 500;
-      transition: background-color 0.2s, transform 0.1s;
+      transition: all 0.2s;
+      height: 36px;
     }
 
     .submit-button:hover {
