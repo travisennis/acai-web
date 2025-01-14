@@ -1,8 +1,8 @@
-import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
+import fs from "node:fs/promises";
 import path from "node:path";
+import { loadUrl } from "@travisennis/acai-core/tools";
 
-const BODY_CONTENTS = /<body[^>]*>([\s\S]*?)<\/body>/i;
 export async function processPrompt(
   message: string,
   { baseDir }: { baseDir: string },
@@ -100,18 +100,13 @@ export async function processPrompt(
     } else if (line.startsWith("@url ")) {
       fileDirectiveFound = true;
       const urlPath = line.replace("@url ", "").trim();
-      const response = await fetch(urlPath);
-      if (!response.ok) {
-        processedLines.push(`Url:${urlPath}\nStatus: ${response.status}`);
-      } else {
-        const text = await response.text();
-        const processedText = (text.match(BODY_CONTENTS)?.[1] || "").replace(
-          /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-          "",
-        );
+      try {
+        const clean = await loadUrl(urlPath);
         processedLines.push(
-          `URL: ${urlPath}\n\`\`\`\n${processedText.trim()}\n\`\`\`\n`,
+          `URL: ${urlPath}\n\`\`\`\n${clean.trim()}\n\`\`\`\n`,
         );
+      } catch (error) {
+        processedLines.push(`Url:${urlPath}\nStatus: ${error}`);
       }
     } else if (line.startsWith("@pdf ")) {
       const pdfUrl = line.replace("@pdf ", "");
