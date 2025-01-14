@@ -13,6 +13,7 @@ import modesApp from "./modes.ts";
 import generateApp from "./generate.ts";
 import filesApp from "./files.ts";
 import configApp from "./config.ts";
+import promptsApp from "./prompts.ts";
 
 const app = new Hono();
 
@@ -47,6 +48,7 @@ const routes = app
   .route("/modes", modesApp)
   .route("/generate", generateApp)
   .route("/files", filesApp)
+  .route("/prompts", promptsApp)
   .route("/history", historyApp)
   .route("/config", configApp);
 

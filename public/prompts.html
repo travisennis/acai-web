@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Files</title>
+  <title>Prompts</title>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="/public/style.css">
@@ -18,8 +18,8 @@
         <a href="/public/chat.html" class="nav-link">Chat</a>
         <a href="/public/modes.html" class="nav-link">Modes</a>
         <a href="/public/generate.html" class="nav-link">Generate</a>
-        <a href="/public/files.html" class="nav-link active">Files</a>
-        <a href="/public/prompts.html" class="nav-link">Prompts</a>
+        <a href="/public/files.html" class="nav-link">Files</a>
+        <a href="/public/prompts.html" class="nav-link active">Prompts</a>
         <a href="/public/history.html" class="nav-link">History</a>
       </div>
     </div>
@@ -33,8 +33,8 @@
           <!-- Left Panel - File List -->
           <div class="left-panel">
             <div class="panel-header">
-              <h2>Files</h2>
-              <button id="newFileBtn" class="action-button">➕ New File</button>
+              <h2>Prompts</h2>
+              <button id="newFileBtn" class="action-button">➕ New Prompt</button>
             </div>
             <div id="filesList" class="files-list">
               <!-- Files will be listed here -->
@@ -83,7 +83,7 @@
 
     async function loadFiles() {
       try {
-        const response = await fetch('/files');
+        const response = await fetch('/prompts');
         const files = await response.json();
         currentFiles = files;
         renderFilesList();
@@ -162,14 +162,14 @@
         let response;
         if (fileId) {
           // Edit existing file
-          response = await fetch(`/files/${fileId}`, {
+          response = await fetch(`/prompts/${fileId}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({content}),
           });
         } else {
           // Create new file
-          response = await fetch('/files', {
+          response = await fetch('/prompts', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({name, content}),
@@ -203,7 +203,7 @@
       if (!confirm('Are you sure you want to delete this file?')) return;
 
       try {
-        const response = await fetch(`/files/${id}`, {
+        const response = await fetch(`/prompts/${id}`, {
           method: 'DELETE',
         });
 
