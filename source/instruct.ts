@@ -22,7 +22,12 @@ import {
 import { join } from "@travisennis/stdlib/desm";
 import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
-import { type CoreMessage, type UserContent, generateText } from "ai";
+import {
+  type CoreMessage,
+  type ProviderMetadata,
+  type UserContent,
+  generateText,
+} from "ai";
 import { Hono } from "hono";
 import { match } from "ts-pattern";
 import { z } from "zod";
@@ -192,6 +197,12 @@ export const app = new Hono()
         .with("code", () => "You are software engineering assistant.")
         .exhaustive();
 
+      const maxSteps = match(chosenMode)
+        .with("normal", () => 3)
+        .with("research", () => 10)
+        .with("code", () => 15)
+        .exhaustive();
+
       const { text, experimental_providerMetadata } = await generateText({
         model: wrapLanguageModel(
           languageModel(chosenModel),
@@ -205,25 +216,19 @@ export const app = new Hono()
         experimental_activeTools: activeTools,
         system: systemPrompt,
         messages,
-        maxSteps: 10,
+        maxSteps,
       });
 
       // access the grounding metadata. Casting to the provider metadata type
       // is optional but provides autocomplete and type safety.
-      const metadata = experimental_providerMetadata?.google as
-        | GoogleGenerativeAIProviderMetadata
-        | undefined;
-      const groundingMetadata = metadata?.groundingMetadata;
-      const safetyRatings = metadata?.safetyRatings;
-
-      console.dir(groundingMetadata);
-      console.dir(safetyRatings);
+      const metadata = parseMetadata(experimental_providerMetadata);
 
       const result = `${message}\n\n${text}`;
 
       return c.json(
         {
           content: result.trim(),
+          sources: metadata.sources,
         },
         200,
       );
@@ -231,3 +236,46 @@ export const app = new Hono()
   );
 
 export default app;
+
+function parseMetadata(
+  experimental_providerMetadata: ProviderMetadata | undefined,
+) {
+  const metadata = experimental_providerMetadata?.google as
+    | GoogleGenerativeAIProviderMetadata
+    | undefined;
+
+  // Extract sources from grounding metadata
+  const sourceMap = new Map<
+    string,
+    { title: string; url: string; snippet: string }
+  >();
+
+  // Get grounding metadata from response
+  const chunks = metadata?.groundingMetadata?.groundingChunks || [];
+  const supports = metadata?.groundingMetadata?.groundingSupports || [];
+
+  chunks.forEach((chunk, index: number) => {
+    if (chunk.web?.uri && chunk.web?.title) {
+      const url = chunk.web.uri;
+      if (!sourceMap.has(url)) {
+        // Find snippets that reference this chunk
+        const snippets = supports
+          .filter((support) => support.groundingChunkIndices?.includes(index))
+          .map((support) => support.segment.text)
+          .join(" ");
+
+        sourceMap.set(url, {
+          title: chunk.web.title,
+          url: url,
+          snippet: snippets || "",
+        });
+      }
+    }
+  });
+
+  const sources = Array.from(sourceMap.values());
+
+  return {
+    sources,
+  };
+}
