@@ -8,7 +8,6 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="/public/style.css">
-  <link rel="stylesheet" href="/public/files.css">
 </head>
 
 <body>
@@ -35,7 +34,7 @@
           <div class="left-panel">
             <div class="panel-header">
               <h2>Prompts</h2>
-              <button id="newFileBtn" class="action-button">➕ New Prompt</button>
+              <button id="newFileBtn" class="action-button button">➕ New Prompt</button>
             </div>
             <div id="filesList" class="files-list">
               <!-- Files will be listed here -->
@@ -55,7 +54,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h2 id="modalTitle">Create New File</h2>
-              <button class="close-button" onclick="closeModal()">&times;</button>
+              <button class="close-button button" onclick="closeModal()">&times;</button>
             </div>
             <form id="fileForm" class="file-form">
               <input type="hidden" id="fileId">
@@ -68,8 +67,8 @@
                 <textarea id="fileContent" name="fileContent" class="settings-input" rows="12" required></textarea>
               </div>
               <div class="button-group">
-                <button type="submit" class="submit-button">Save</button>
-                <button type="button" class="cancel-button" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="submit-button button">Save</button>
+                <button type="button" class="cancel-button button" onclick="closeModal()">Cancel</button>
               </div>
             </form>
           </div>
@@ -119,8 +118,8 @@
         <div class="file-detail-header">
           <h2>${file.name}</h2>
           <div class="file-actions">
-            <button onclick="editFile('${file.id}')" class="action-button">Edit</button>
-            <button onclick="deleteFile('${file.id}')" class="action-button delete">Delete</button>
+            <button onclick="editFile('${file.id}')" class="action-button button">Edit</button>
+            <button onclick="deleteFile('${file.id}')" class="action-button delete button">Delete</button>
           </div>
         </div>
         <div class="file-metadata">
