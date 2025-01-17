@@ -231,7 +231,7 @@ export const app = new Hono()
         .with(
           "research",
           () =>
-            "You are research assistant. Help me understand difficult topics.",
+            `You are research assistant. Help me understand difficult topics. Today's date is ${(new Date()).toISOString()}`,
         )
         .with("code", () => "You are software engineering assistant.")
         .exhaustive();
