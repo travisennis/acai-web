@@ -27,6 +27,7 @@ import {
   type ProviderMetadata,
   type UserContent,
   generateText,
+  tool,
 } from "ai";
 import { Hono } from "hono";
 import { match } from "ts-pattern";
@@ -155,6 +156,42 @@ export const app = new Hono()
 
       const brainstormingTools = createBrainstormingTools(langModel);
 
+      const createWebSearchTools = () => {
+        return {
+          webSearch: tool({
+            description:
+              "Searches the web and returns an answer. The query can be a question or set of search terms.",
+            parameters: z.object({
+              query: z
+                .string()
+                .describe("A query or set of query terms to search for."),
+            }),
+            execute: async ({ query }) => {
+              const { text, experimental_providerMetadata } =
+                await generateText({
+                  model: wrapLanguageModel(
+                    languageModel("google:flash2-search"),
+                    log,
+                    usage,
+                    auditMessage({ path: MESSAGES_FILE_PATH }),
+                  ),
+                  temperature: temperature ?? 0.3,
+                  maxTokens: maxTokens ?? 8192,
+                  system: systemPrompt,
+                  prompt: query,
+                });
+              const metadata = parseMetadata(experimental_providerMetadata);
+              const sources = metadata.sources.map(
+                (source) => `${source.title}\n${source.url}\n${source.snippet}`,
+              );
+              return `Answer: ${text}\n\nSources:${sources.join("\n\n")}`;
+            },
+          }),
+        };
+      };
+
+      const webSearchTools = createWebSearchTools();
+
       const allTools = {
         ...codeTools,
         ...fsTools,
@@ -165,6 +202,7 @@ export const app = new Hono()
         ...memoryTools,
         ...thinkingTools,
         ...brainstormingTools,
+        ...webSearchTools,
       } as const;
 
       const activeTools: (keyof typeof allTools)[] = match(chosenMode)
@@ -174,6 +212,7 @@ export const app = new Hono()
           ...objectKeys(brainstormingTools),
           ...objectKeys(raindropTools),
           ...objectKeys(urlTools),
+          ...objectKeys(webSearchTools),
         ])
         .with("code", () => [
           ...objectKeys(codeTools),
