@@ -81,10 +81,21 @@ app
   .post("/", zValidator("json", promptSchema), async (c) => {
     try {
       const { name, content } = c.req.valid("json");
-      const id = Date.now().toString();
+      const id = name.toLowerCase().replace(/\s+/g, "-");
       const timestamp = new Date().toISOString();
 
-      await fs.writeFile(path.join(PROMPTS_DIR, `${id}.md`), content, "utf-8");
+      const filePath = path.join(PROMPTS_DIR, `${id}.md`);
+
+      const fileExists = await fs
+        .access(filePath)
+        .then(() => true)
+        .catch(() => false);
+
+      if (!fileExists) {
+        await fs.writeFile(filePath, content, "utf-8");
+      } else {
+        throw new Error(`File already exists: ${filePath}.`);
+      }
 
       const promptMetadata: PromptMetadata = {
         id,
@@ -95,8 +106,11 @@ app
       };
 
       return c.json(promptMetadata, 201);
-    } catch (_error) {
-      return c.json({ error: "Failed to create prompt" }, 500);
+    } catch (error) {
+      return c.json(
+        { error: `Failed to create prompt: ${(error as Error).message}` },
+        500,
+      );
     }
   })
   .get("/", async (c) => {
