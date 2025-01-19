@@ -119,6 +119,7 @@
           <h2>${file.name}</h2>
           <div class="file-actions">
             <button onclick="editFile('${file.id}')" class="action-button button">Edit</button>
+            <button onclick="copyContent('${file.id}')" class="action-button button">Copy</button>
             <button onclick="deleteFile('${file.id}')" class="action-button delete button">Delete</button>
           </div>
         </div>
@@ -235,6 +236,24 @@
         }
       };
     });
+
+    async function copyContent(id) {
+      const file = currentFiles.find(f => f.id === id);
+      if (!file) return;
+      
+      try {
+        await navigator.clipboard.writeText(file.content);
+        // Optional: Show a brief success message
+        const copyButton = document.querySelector(`button[onclick="copyContent('${id}')"]`);
+        const originalText = copyButton.textContent;
+        copyButton.textContent = 'Copied!';
+        setTimeout(() => {
+          copyButton.textContent = originalText;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+      }
+    }
   </script>
 </body>
 
