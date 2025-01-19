@@ -123,6 +123,15 @@ export const app = new Hono()
         });
       }
 
+      const { text: intent } = await generateText({
+        model: languageModel("google:flash2"),
+        system:
+          "You task is to determine the intent of the user based on the task they have submitted. Valid intents are planning, research, and coding. Only respond with the intent.",
+        prompt: `Task: ${finalMessage}: Intent:`,
+      });
+
+      console.info(intent);
+
       const langModel = wrapLanguageModel(
         languageModel(chosenModel),
         log,
