@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { loadUrl } from "@travisennis/acai-core/tools";
+import { directoryTree, loadUrl } from "@travisennis/acai-core/tools";
 
 export async function processPrompt(
   message: string,
@@ -21,6 +21,9 @@ export async function processPrompt(
       if (!existsSync(projectDir)) {
         throw new Error(`${projectDir} does not exist.`);
       }
+      processedLines.push(
+        `I'm giving you access to the following directory ${projectDir}\n`,
+      );
     } else if (line.startsWith("@list-prompts")) {
       fileDirectiveFound = true;
 
@@ -33,9 +36,9 @@ export async function processPrompt(
       processedLines.push(
         `Prompts:\n${fileNamesWithoutExtension.join("\n")}\n`,
       );
-    } else if (line.startsWith("@prompt ")) {
+    } else if (line.startsWith("@prompt")) {
       fileDirectiveFound = true;
-      const promptName = line.replace("@prompt ", "").trim();
+      const promptName = line.replace("@prompt", "").trim();
       if (!promptName) {
         throw new Error("Prompt name cannot be empty");
       }
@@ -46,9 +49,9 @@ export async function processPrompt(
       );
 
       processedLines.push(`${f}`);
-    } else if (line.startsWith("@file ")) {
+    } else if (line.startsWith("@file")) {
       fileDirectiveFound = true;
-      const filePath = line.replace("@file ", "").trim();
+      const filePath = line.replace("@file", "").trim();
       const fileExtension = filePath.split(".").pop();
       const codeBlockName =
         {
@@ -79,9 +82,9 @@ export async function processPrompt(
       processedLines.push(
         `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
       );
-    } else if (line.startsWith("@files ")) {
+    } else if (line.startsWith("@files")) {
       fileDirectiveFound = true;
-      const filePaths = line.replace("@files ", "");
+      const filePaths = line.replace("@files", "");
       for (const filePath of filePaths.split(" ")) {
         const fileExtension = filePath.split(".").pop();
         const f = await fs.readFile(`${baseDir}${filePath}`.trim(), "utf8");
@@ -94,9 +97,8 @@ export async function processPrompt(
       fileDirectiveFound = true;
       const filePath = line.replace("@dir", "").trim();
 
-      const dirs = await fs.readdir(`${baseDir}${filePath}`);
-
-      processedLines.push(`File tree:\n${dirs.join("\n")}\n`);
+      const tree = await directoryTree(`${baseDir}${filePath}`);
+      processedLines.push(`File tree:\n${tree}\n`);
     } else if (line.startsWith("@url ")) {
       fileDirectiveFound = true;
       const urlPath = line.replace("@url ", "").trim();
