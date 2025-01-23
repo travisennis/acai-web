@@ -2,8 +2,8 @@
   "name": "acai-web",
   "type": "module",
   "scripts": {
-    "start": "node --experimental-strip-types source/index.ts",
-    "dev": "node --experimental-strip-types --watch source/index.ts",
+    "start": "node --env-file=.env --experimental-strip-types source/index.ts",
+    "dev": "node --env-file=.env --experimental-strip-types --watch source/index.ts",
     "build": "tsc",
     "lint": "biome lint",
     "lint:fix": "biome lint --unsafe --write",
