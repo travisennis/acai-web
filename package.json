@@ -14,28 +14,28 @@
     "check": "npx npm-check-updates  --interactive --format group"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^1.0.7",
-    "@ai-sdk/azure": "^1.0.16",
-    "@ai-sdk/google": "^1.0.15",
-    "@ai-sdk/openai": "^1.0.14",
+    "@ai-sdk/anthropic": "^1.1.2",
+    "@ai-sdk/azure": "^1.1.2",
+    "@ai-sdk/google": "^1.1.2",
+    "@ai-sdk/openai": "^1.1.2",
     "@hono/node-server": "^1.13.7",
-    "@hono/node-ws": "^1.0.5",
+    "@hono/node-ws": "^1.0.6",
     "@hono/zod-validator": "^0.4.2",
     "@socket.io/redis-streams-adapter": "^0.2.2",
-    "@travisennis/acai-core": "^0.0.6",
+    "@travisennis/acai-core": "^0.0.7",
     "@travisennis/stdlib": "^0.0.1",
-    "ai": "^4.0.29",
-    "hono": "^4.6.16",
+    "ai": "^4.1.2",
+    "hono": "^4.6.18",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1",
-    "ts-pattern": "^5.6.0",
+    "ts-pattern": "^5.6.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/node": "^22.10.5",
+    "@types/node": "^22.10.9",
     "prettier": "3.4.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.3"
   }
 }
