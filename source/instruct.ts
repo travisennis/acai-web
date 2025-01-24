@@ -304,7 +304,8 @@ Only respond with the tools that are most useful for this task. A task may requi
       // is optional but provides autocomplete and type safety.
       const metadata = parseMetadata(experimental_providerMetadata);
 
-      const result = `${message}\n\n${reasoning ?? ""}${text}`;
+      const thinkingBlock = `<think>\n${reasoning}\n</think>\n`;
+      const result = `${message}\n\n${reasoning ? thinkingBlock : ""}${text}`;
 
       return c.json(
         {
