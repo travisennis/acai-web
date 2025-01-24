@@ -3,6 +3,145 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { directoryTree, loadUrl } from "@travisennis/acai-core/tools";
 
+interface CommandContext {
+  baseDir: string;
+  line: string;
+  processedLines: string[];
+  attachments: Buffer[];
+}
+
+const codeBlockExtensions: Record<string, string> = {
+  js: "javascript",
+  ts: "typescript",
+  py: "python",
+  rb: "ruby",
+  java: "java",
+  cpp: "cpp",
+  cs: "csharp",
+  go: "go",
+  rs: "rust",
+  php: "php",
+  html: "html",
+  css: "css",
+  json: "json",
+  yml: "yaml",
+  yaml: "yaml",
+  md: "markdown",
+  sql: "sql",
+  sh: "bash",
+  bash: "bash",
+  txt: "text",
+};
+
+async function processListPrompts(context: CommandContext) {
+  const { baseDir, processedLines } = context;
+  const files = await fs.readdir(path.join(baseDir, "prompts"));
+  const fileNamesWithoutExtension = files.map((file) => path.parse(file).name);
+  processedLines.push(`Prompts:\n${fileNamesWithoutExtension.join("\n")}\n`);
+  return true;
+}
+
+async function processPromptCommand(context: CommandContext) {
+  const { baseDir, line, processedLines } = context;
+  const promptName = line.replace("@prompt", "").trim();
+  if (!promptName) {
+    throw new Error("Prompt name cannot be empty");
+  }
+
+  const f = await fs.readFile(
+    path.join(baseDir, "prompts", `${promptName}.md`),
+    "utf8",
+  );
+  processedLines.push(`${f}`);
+  return true;
+}
+
+async function processFileCommand(context: CommandContext) {
+  const { baseDir, line, processedLines } = context;
+  const filePath = line.replace("@file", "").trim();
+  const fileExtension = filePath.split(".").pop() || "";
+  const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
+
+  const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
+  processedLines.push(
+    `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
+  );
+  return true;
+}
+
+async function processFilesCommand(context: CommandContext) {
+  const { baseDir, line, processedLines } = context;
+  const filePaths = line.replace("@files", "");
+  for (const filePath of filePaths.split(" ")) {
+    if (!filePath.trim()) {
+      continue;
+    }
+    const fileExtension = filePath.split(".").pop();
+    const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
+    processedLines.push(
+      `File: ${filePath}\n\`\`\` ${fileExtension}\n${f}\n\`\`\``,
+    );
+  }
+  return true;
+}
+
+async function processDirCommand(context: CommandContext) {
+  const { baseDir, line, processedLines } = context;
+  const filePath = line.replace("@dir", "").trim();
+  const tree = await directoryTree(path.join(baseDir, filePath));
+  processedLines.push(`File tree:\n${tree}\n`);
+  return true;
+}
+
+async function processUrlCommand(context: CommandContext) {
+  const { line, processedLines } = context;
+  const urlPath = line.replace("@url ", "").trim();
+  try {
+    const clean = await loadUrl(urlPath);
+    processedLines.push(`URL: ${urlPath}\n\`\`\`\n${clean.trim()}\n\`\`\`\n`);
+  } catch (error) {
+    processedLines.push(`Url:${urlPath}\nStatus: ${error}`);
+  }
+  return true;
+}
+
+function processProjectDirCommand(context: CommandContext) {
+  const { baseDir, line, processedLines } = context;
+  const project = line.replace("@projectdir ", "").trim();
+  const projectDir = path.join(baseDir, project);
+
+  if (existsSync(projectDir)) {
+    processedLines.push(
+      `I'm giving you access to the following directory ${projectDir}\n`,
+    );
+  } else {
+    processedLines.push(`@projectdir ${projectDir} does not exist.`);
+  }
+  return projectDir;
+}
+
+async function processPdfCommand(context: CommandContext) {
+  const { line, attachments } = context;
+  const pdfUrl = line.replace("@pdf ", "");
+  const response = await fetch(pdfUrl);
+  const buffer = await response.arrayBuffer();
+  const pdfBuffer = Buffer.from(buffer);
+  attachments.push(pdfBuffer);
+  return false;
+}
+
+const commandHandlers: Record<
+  string,
+  (context: CommandContext) => Promise<boolean | string | null>
+> = {
+  "@list-prompts": processListPrompts,
+  "@prompt": processPromptCommand,
+  "@file": processFileCommand,
+  "@files": processFilesCommand,
+  "@dir": processDirCommand,
+  "@url": processUrlCommand,
+};
+
 export async function processPrompt(
   message: string,
   { baseDir }: { baseDir: string },
@@ -12,112 +151,47 @@ export async function processPrompt(
   const attachments: Buffer[] = [];
   let projectDir: string | null = null;
   let fileDirectiveFound = false;
+
+  // First pass: Process all commands except @projectdir and @pdf
   for (const line of lines) {
-    if (line.startsWith("@projectdir")) {
-      const project = line.replace("@projectdir ", "").trim();
+    const command = Object.keys(commandHandlers).find((cmd) =>
+      line.startsWith(cmd),
+    );
 
-      projectDir = path.join(baseDir, project);
-      if (!existsSync(projectDir)) {
-        throw new Error(`${projectDir} does not exist.`);
-      }
-      processedLines.push(
-        `I'm giving you access to the following directory ${projectDir}\n`,
-      );
-    } else if (line.startsWith("@list-prompts")) {
+    if (command) {
+      const context = {
+        baseDir,
+        line,
+        processedLines,
+        attachments,
+      };
       fileDirectiveFound = true;
-
-      const files = await fs.readdir(`${baseDir}/prompts`);
-
-      const fileNamesWithoutExtension = files.map(
-        (file) => path.parse(file).name,
-      );
-
-      processedLines.push(
-        `Prompts:\n${fileNamesWithoutExtension.join("\n")}\n`,
-      );
-    } else if (line.startsWith("@prompt")) {
-      fileDirectiveFound = true;
-      const promptName = line.replace("@prompt", "").trim();
-      if (!promptName) {
-        throw new Error("Prompt name cannot be empty");
-      }
-
-      const f = await fs.readFile(
-        `${baseDir}/prompts/${promptName}.md`,
-        "utf8",
-      );
-
-      processedLines.push(`${f}`);
-    } else if (line.startsWith("@file")) {
-      fileDirectiveFound = true;
-      const filePath = line.replace("@file", "").trim();
-      const fileExtension = filePath.split(".").pop();
-      const codeBlockName =
-        {
-          js: "javascript",
-          ts: "typescript",
-          py: "python",
-          rb: "ruby",
-          java: "java",
-          cpp: "cpp",
-          cs: "csharp",
-          go: "go",
-          rs: "rust",
-          php: "php",
-          html: "html",
-          css: "css",
-          json: "json",
-          yml: "yaml",
-          yaml: "yaml",
-          md: "markdown",
-          sql: "sql",
-          sh: "bash",
-          bash: "bash",
-          txt: "text",
-        }[fileExtension ?? ""] || filePath.split(".").pop();
-
-      const f = await fs.readFile(`${baseDir}${filePath}`.trim(), "utf8");
-
-      processedLines.push(
-        `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
-      );
-    } else if (line.startsWith("@files")) {
-      fileDirectiveFound = true;
-      const filePaths = line.replace("@files", "");
-      for (const filePath of filePaths.split(" ")) {
-        const fileExtension = filePath.split(".").pop();
-        const f = await fs.readFile(`${baseDir}${filePath}`.trim(), "utf8");
-
-        processedLines.push(
-          `File: ${filePath}\n\`\`\` ${fileExtension}\n${f}\n\`\`\``,
-        );
-      }
-    } else if (line.startsWith("@dir")) {
-      fileDirectiveFound = true;
-      const filePath = line.replace("@dir", "").trim();
-
-      const tree = await directoryTree(`${baseDir}${filePath}`);
-      processedLines.push(`File tree:\n${tree}\n`);
-    } else if (line.startsWith("@url ")) {
-      fileDirectiveFound = true;
-      const urlPath = line.replace("@url ", "").trim();
-      try {
-        const clean = await loadUrl(urlPath);
-        processedLines.push(
-          `URL: ${urlPath}\n\`\`\`\n${clean.trim()}\n\`\`\`\n`,
-        );
-      } catch (error) {
-        processedLines.push(`Url:${urlPath}\nStatus: ${error}`);
-      }
-    } else if (line.startsWith("@pdf ")) {
-      const pdfUrl = line.replace("@pdf ", "");
-
-      const response = await fetch(pdfUrl);
-      const buffer = await response.arrayBuffer();
-      const pdfBuffer = Buffer.from(buffer);
-      attachments.push(pdfBuffer);
-    } else {
+      await commandHandlers[command](context);
+    } else if (!(line.startsWith("@projectdir") || line.startsWith("@pdf"))) {
       processedLines.push(line);
+    }
+  }
+
+  // Second pass: Process @projectdir and @pdf only if no other commands were found
+  if (!fileDirectiveFound) {
+    for (const line of lines) {
+      if (line.startsWith("@projectdir")) {
+        const context = {
+          baseDir,
+          line,
+          processedLines,
+          attachments,
+        };
+        projectDir = processProjectDirCommand(context);
+      } else if (line.startsWith("@pdf")) {
+        const context = {
+          baseDir,
+          line,
+          processedLines,
+          attachments,
+        };
+        await processPdfCommand(context);
+      }
     }
   }
 
