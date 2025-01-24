@@ -34,7 +34,7 @@ import { match } from "ts-pattern";
 import { z } from "zod";
 import { processPrompt } from "./commands.ts";
 
-const modes = ["normal", "research", "code"] as const;
+const modes = ["normal", "research", "code", "code-interpreter"] as const;
 
 export const app = new Hono()
   .get("/", (c) => {
@@ -95,6 +95,7 @@ export const app = new Hono()
       }
 
       const finalMessage = pp.processedPrompt;
+
       const messages: CoreMessage[] = [];
       if (pp.attachments.length > 0) {
         const content: UserContent = [
@@ -122,15 +123,6 @@ export const app = new Hono()
           content: finalMessage,
         });
       }
-
-      const { text: intent } = await generateText({
-        model: languageModel("google:flash2"),
-        system:
-          "You task is to determine the intent of the user based on the task they have submitted. Valid intents are planning, research, and coding. Only respond with the intent.",
-        prompt: `Task: ${finalMessage}: Intent:`,
-      });
-
-      console.info(intent);
 
       const langModel = wrapLanguageModel(
         languageModel(chosenModel),
@@ -214,6 +206,39 @@ export const app = new Hono()
         ...webSearchTools,
       } as const;
 
+      const { text: chosenTools } = await generateText({
+        model: languageModel("google:flash2"),
+        system: `You task is to determine the tools that are most useful for the given task.
+
+If the task is to understand a project, code base, or set of files then use the following tools:
+${[...objectKeys(fsTools), ...objectKeys(gitTools)].join("\n")}
+
+If the task is to update or edit a project, code base, or set of files then use the following tools:
+${[
+  ...objectKeys(codeTools),
+  ...objectKeys(codeInterpreterTool),
+  ...objectKeys(fsTools),
+  ...objectKeys(gitTools),
+].join("\n")}
+
+If the task is to work with bookmarks then use the following tools:
+${[...objectKeys(raindropTools), ...objectKeys(urlTools)].join("\n")}
+
+If the task is to read content from URLs then use the following bookmarks:
+${[...objectKeys(urlTools)].join("\n")}
+
+If the task is to search for additional information on the web then use the following tools:
+${[...objectKeys(webSearchTools)].join("\n")}
+
+If the task is to think through problems or brainstorm ideas then use the following tools:
+${[...objectKeys(thinkingTools), ...objectKeys(brainstormingTools)].join("\n")}
+
+Only respond with the tools that are most useful for this task. A task may require tools from multiple lists. Your response should be a comma-separated list.`,
+        prompt: `Task: ${finalMessage}: Intent:`,
+      });
+
+      console.info(chosenTools);
+
       const activeTools: (keyof typeof allTools)[] = match(chosenMode)
         .with("normal", () => [])
         .with("research", () => [
@@ -229,6 +254,7 @@ export const app = new Hono()
           ...objectKeys(fsTools),
           ...objectKeys(gitTools),
         ])
+        .with("code-interpreter", () => [...objectKeys(codeInterpreterTool)])
         .exhaustive();
 
       const systemPrompt = match(chosenMode)
@@ -243,35 +269,42 @@ export const app = new Hono()
             `You are research assistant. Help me understand difficult topics. Today's date is ${(new Date()).toISOString()}`,
         )
         .with("code", () => "You are software engineering assistant.")
+        .with(
+          "code-interpreter",
+          () =>
+            "You are a very helpful assistant that is focused on helping solve hard problems.",
+        )
         .exhaustive();
 
       const maxSteps = match(chosenMode)
         .with("normal", () => 3)
         .with("research", () => 10)
         .with("code", () => 15)
+        .with("code-interpreter", () => 10)
         .exhaustive();
 
-      const { text, experimental_providerMetadata } = await generateText({
-        model: wrapLanguageModel(
-          languageModel(chosenModel),
-          log,
-          usage,
-          auditMessage({ path: MESSAGES_FILE_PATH }),
-        ),
-        temperature: temperature ?? 0.3,
-        maxTokens: maxTokens ?? 8192,
-        tools: allTools,
-        experimental_activeTools: activeTools,
-        system: systemPrompt,
-        messages,
-        maxSteps,
-      });
+      const { text, reasoning, experimental_providerMetadata } =
+        await generateText({
+          model: wrapLanguageModel(
+            languageModel(chosenModel),
+            log,
+            usage,
+            auditMessage({ path: MESSAGES_FILE_PATH }),
+          ),
+          temperature: temperature ?? 0.3,
+          maxTokens: maxTokens ?? 8192,
+          tools: allTools,
+          experimental_activeTools: activeTools,
+          system: systemPrompt,
+          messages,
+          maxSteps,
+        });
 
       // access the grounding metadata. Casting to the provider metadata type
       // is optional but provides autocomplete and type safety.
       const metadata = parseMetadata(experimental_providerMetadata);
 
-      const result = `${message}\n\n${text}`;
+      const result = `${message}\n\n${reasoning ?? ""}${text}`;
 
       return c.json(
         {
