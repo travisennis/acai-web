@@ -70,7 +70,7 @@ async function readLines(files: string[]): Promise<string[]> {
     }
   }
 
-  return allLines.reverse();
+  return allLines;
 }
 
 async function readPaginatedLines(
@@ -78,8 +78,8 @@ async function readPaginatedLines(
   page: number,
   pageSize: number,
 ): Promise<Interaction[]> {
-  const startIndex = Math.max(allLines.length - page * pageSize, 0);
-  const endIndex = Math.max(allLines.length - (page - 1) * pageSize, 0);
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, allLines.length);
   const selectedLines = allLines.slice(startIndex, endIndex);
 
   return selectedLines.map((line, index) => ({
