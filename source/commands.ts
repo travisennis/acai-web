@@ -12,8 +12,7 @@ export async function processPrompt(
   const attachments: Buffer[] = [];
   let projectDir: string | null = null;
   let fileDirectiveFound = false;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const line of lines) {
     if (line.startsWith("@projectdir")) {
       const project = line.replace("@projectdir ", "").trim();
 
