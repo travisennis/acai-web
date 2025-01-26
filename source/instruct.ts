@@ -70,15 +70,10 @@ export const app = new Hono()
           ? (mode as (typeof modes)[number])
           : "normal";
 
-      const MEMORY_FILE_PATH = join(
-        import.meta.url,
-        "..",
-        "data",
-        "memory.json",
-      );
+      const memoryFilePath = join(import.meta.url, "..", "data", "memory.json");
 
       const stateDir = envPaths("acai").state;
-      const MESSAGES_FILE_PATH = path.join(stateDir, "messages.jsonl");
+      const messagesFilePath = path.join(stateDir, "messages.jsonl");
 
       const baseDir = "/Users/travisennis/Github";
       const pp = await processPrompt(message, {
@@ -128,7 +123,7 @@ export const app = new Hono()
         languageModel(chosenModel),
         log,
         usage,
-        auditMessage({ path: MESSAGES_FILE_PATH }),
+        auditMessage({ path: messagesFilePath }),
       );
 
       const fsTools = await createFileSystemTools({
@@ -151,7 +146,7 @@ export const app = new Hono()
 
       const urlTools = createUrlTools();
 
-      const memoryTools = createKnowledgeGraphTools({ path: MEMORY_FILE_PATH });
+      const memoryTools = createKnowledgeGraphTools({ path: memoryFilePath });
 
       const thinkingTools = createSequentialThinkingTool();
 
@@ -174,7 +169,7 @@ export const app = new Hono()
                     languageModel("google:flash2-search"),
                     log,
                     usage,
-                    auditMessage({ path: MESSAGES_FILE_PATH }),
+                    auditMessage({ path: messagesFilePath }),
                   ),
                   temperature: temperature ?? 0.3,
                   maxTokens: maxTokens ?? 8192,
@@ -289,7 +284,7 @@ Only respond with the tools that are most useful for this task. A task may requi
             languageModel(chosenModel),
             log,
             usage,
-            auditMessage({ path: MESSAGES_FILE_PATH }),
+            auditMessage({ path: messagesFilePath }),
           ),
           temperature: temperature ?? 0.3,
           maxTokens: maxTokens ?? 8192,
