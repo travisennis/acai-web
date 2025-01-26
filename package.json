@@ -23,7 +23,7 @@
     "@hono/node-ws": "^1.0.6",
     "@hono/zod-validator": "^0.4.2",
     "@socket.io/redis-streams-adapter": "^0.2.2",
-    "@travisennis/acai-core": "^0.0.10",
+    "@travisennis/acai-core": "^0.0.11",
     "@travisennis/stdlib": "^0.0.1",
     "ai": "^4.1.5",
     "hono": "^4.6.18",
