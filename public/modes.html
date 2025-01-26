@@ -43,8 +43,9 @@
               <div class="settings-container">
                 <div class="settings-group">
                   <label for="model" class="settings-label">Model</label>
-                  <select id="model" name="model" class="settings-input">
-                  </select>
+                  <input list="models" id="model" name="model" class="settings-input" value="anthropic:sonnet">
+                  <datalist id="models">
+                  </datalist>
                 </div>
 
                 <div class="settings-group">
@@ -108,18 +109,16 @@
     // Initialize select options
     async function initializeSelects() {
       const config = await fetchConfig();
-      const modelSelect = document.getElementById('model');
+      const modelDatalist = document.getElementById('models');
 
       // Clear existing options
-      modelSelect.innerHTML = '';
+      modelDatalist.innerHTML = '';
 
       // Populate model options
       config.models.forEach(model => {
         const option = document.createElement('option');
         option.value = model;
-        option.textContent = model;
-        if (model === 'anthropic:sonnet') option.selected = true;
-        modelSelect.appendChild(option);
+        modelDatalist.appendChild(option);
       });
     }
 
