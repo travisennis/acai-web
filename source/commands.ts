@@ -62,11 +62,20 @@ async function processFileCommand(context: CommandContext) {
   const fileExtension = filePath.split(".").pop() || "";
   const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
 
-  const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
-  processedLines.push(
-    `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
-  );
-  return true;
+  try {
+    const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
+    processedLines.push(
+      `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
+    );
+    return true;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      processedLines.push(`Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`);
+    } else {
+      processedLines.push(`Error reading file ${filePath}: ${error.message}`);
+    }
+    return true;
+  }
 }
 
 async function processFilesCommand(context: CommandContext) {
@@ -76,20 +85,40 @@ async function processFilesCommand(context: CommandContext) {
     if (!filePath.trim()) {
       continue;
     }
-    const fileExtension = filePath.split(".").pop();
-    const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
-    processedLines.push(
-      `File: ${filePath}\n\`\`\` ${fileExtension}\n${f}\n\`\`\``,
-    );
+    try {
+      const fileExtension = filePath.split(".").pop() || "";
+      const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
+      const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
+      processedLines.push(
+        `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
+      );
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        processedLines.push(`Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`);
+      } else {
+        processedLines.push(`Error reading file ${filePath}: ${error.message}`);
+      }
+    }
   }
   return true;
 }
 
 async function processDirCommand(context: CommandContext) {
   const { baseDir, line, processedLines } = context;
-  const filePath = line.replace("@dir", "").trim();
-  const tree = await directoryTree(path.join(baseDir, filePath));
-  processedLines.push(`File tree:\n${tree}\n`);
+  const dirPath = line.replace("@dir", "").trim();
+  try {
+    const fullPath = path.join(baseDir, dirPath);
+    // Check if directory exists first
+    await fs.access(fullPath);
+    const tree = await directoryTree(fullPath);
+    processedLines.push(`File tree:\n${tree}\n`);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      processedLines.push(`Error: Directory not found: ${dirPath}\nPlease check that the directory path is correct and exists.`);
+    } else {
+      processedLines.push(`Error reading directory ${dirPath}: ${error.message}`);
+    }
+  }
   return true;
 }
 
