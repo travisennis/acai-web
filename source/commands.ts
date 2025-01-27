@@ -134,6 +134,12 @@ async function processUrlCommand(context: CommandContext) {
   return true;
 }
 
+function processCommitCommand(context: CommandContext) {
+  const { line, processedLines } = context;
+  processedLines.push("Read the code changes in the current directory and write a commit message and commit it. ");
+  return true;
+}
+
 function processProjectDirCommand(context: CommandContext) {
   const { baseDir, line, processedLines } = context;
   const project = line.replace("@projectdir ", "").trim();
@@ -196,7 +202,7 @@ export async function processPrompt(
       };
       fileDirectiveFound = true;
       await commandHandlers[command](context);
-    } else if (!(line.startsWith("@projectdir") || line.startsWith("@pdf"))) {
+    } else if (!(line.startsWith("@projectdir") || line.startsWith("@pdf") || line.startsWith("@commit"))) {
       processedLines.push(line);
     }
   }
@@ -212,6 +218,14 @@ export async function processPrompt(
           attachments,
         };
         projectDir = processProjectDirCommand(context);
+      } else if (line.startsWith("@commit")) {
+        const context = {
+          baseDir,
+          line,
+          processedLines,
+          attachments,
+        };
+        await processCommitCommand(context);
       } else if (line.startsWith("@pdf")) {
         const context = {
           baseDir,
