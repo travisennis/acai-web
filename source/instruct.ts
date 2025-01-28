@@ -289,6 +289,7 @@ Only respond with the tools that are most useful for this task. A task may requi
           temperature: temperature ?? 0.3,
           maxTokens: maxTokens ?? 8192,
           tools: allTools,
+          // biome-ignore lint/style/useNamingConvention: <external api>
           experimental_activeTools: activeTools,
           system: systemPrompt,
           messages,

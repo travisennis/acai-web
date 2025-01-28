@@ -52,7 +52,7 @@ export const app = new Hono().post(
 
     // Define the path to the JSONL file, you can change this to your desired local path
     const stateDir = envPaths("acai").state;
-    const MESSAGES_FILE_PATH = path.join(stateDir, "messages.jsonl");
+    const messagesFilePath = path.join(stateDir, "messages.jsonl");
 
     const baseDir = "/Users/travisennis/Github";
     const pp = await processPrompt(message, {
@@ -74,7 +74,7 @@ export const app = new Hono().post(
       languageModel(chosenModel),
       log,
       usage,
-      auditMessage({ path: MESSAGES_FILE_PATH }),
+      auditMessage({ path: messagesFilePath }),
     );
 
     let finalResponse = "";
