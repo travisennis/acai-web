@@ -344,7 +344,8 @@ body {
 
 /* Theme transition */
 body * {
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s
+    ease;
 }
 
 select {
@@ -353,7 +354,8 @@ select {
   background-color: var(--background-primary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: var(--spacing-sm) var(--spacing-xl) var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-xl) var(--spacing-sm)
+    var(--spacing-md);
   font-size: 1rem;
   cursor: pointer;
   background-image: url("data:image/svg+xml;utf8,<svg fill='currentColor' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
@@ -364,7 +366,8 @@ select {
   overflow: hidden;
   vertical-align: middle;
   line-height: normal;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow
+    var(--transition-fast);
 }
 
 select:hover {
