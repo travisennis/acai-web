@@ -35,7 +35,7 @@ app.post(
       : "anthropic:sonnet";
 
     const stateDir = envPaths("acai").state;
-    const MESSAGES_FILE_PATH = path.join(stateDir, "messages.jsonl");
+    const messagesFilePath = path.join(stateDir, "messages.jsonl");
 
     messages.push({
       role: "user",
@@ -47,7 +47,7 @@ app.post(
         languageModel(chosenModel),
         log,
         usage,
-        auditMessage({ path: MESSAGES_FILE_PATH }),
+        auditMessage({ path: messagesFilePath }),
       ),
       temperature: temperature ?? 0.3,
       maxTokens: maxTokens ?? 8192,
