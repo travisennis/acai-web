@@ -177,8 +177,9 @@
       };
 
       try {
+        const timeout = 120;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const timeoutId = setTimeout(() => controller.abort(), 120 * 1000);
 
         const response = await fetch('/instruct', {
           signal: controller.signal,
@@ -195,7 +196,7 @@
       } catch (err) {
         console.error(err);
         if (err.name === 'AbortError') {
-          showError('Request timed out after 30 seconds');
+          showError(`Request timed out after ${timeout} seconds`);
         } else {
           showError('Failed to send message');
         }

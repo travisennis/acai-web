@@ -170,8 +170,9 @@
       };
 
       try {
+        const timeout = 120;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
 
         const response = await fetch('/modes', {
           signal: controller.signal,
@@ -188,27 +189,28 @@
       } catch (err) {
         console.error(err);
         if (err.name === 'AbortError') {
-          showError('Request timed out after 30 seconds');
+          showError(`Request timed out after ${timeout} seconds`);
         } else {
           showError('Failed to send message');
-        } finally {
-          setLoading(false);
         }
+      } finally {
+        setLoading(false);
       }
+    }
 
-      function handleKeyDown(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-          e.preventDefault();
-          form.requestSubmit();
-        }
+    function handleKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        form.requestSubmit();
       }
+    }
 
-      // Initialize
-      document.addEventListener('DOMContentLoaded', async () => {
-        await initializeSelects();
-        form.addEventListener('submit', handleSubmit);
-        messageTextarea.addEventListener('keydown', handleKeyDown);
-      });
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initializeSelects();
+      form.addEventListener('submit', handleSubmit);
+      messageTextarea.addEventListener('keydown', handleKeyDown);
+    });
   </script>
 </body>
 

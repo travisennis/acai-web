@@ -174,8 +174,9 @@
       renderMessages();
 
       try {
+        const timeout = 120;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
 
         const response = await fetch('/chat', {
           signal: controller.signal,
@@ -207,7 +208,7 @@
         if (error.name === 'AbortError') {
           messages.push({
             role: 'system',
-            content: 'Request timed out after 30 seconds'
+            content: `Request timed out after ${timeout} seconds`
           });
         } else {
           messages.push({
