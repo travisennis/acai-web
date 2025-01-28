@@ -91,6 +91,12 @@
     async function initializeSelects() {
       const config = await fetchConfig();
       const modelDatalist = document.getElementById('models');
+      const modelInput = document.getElementById('model');
+
+      // Add click handler to select all text in model input
+      modelInput.addEventListener('click', function () {
+        this.select();
+      });
 
       // Clear existing options
       modelDatalist.innerHTML = '';
@@ -144,7 +150,11 @@
       };
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         const response = await fetch('/generate', {
+          signal: controller.signal,
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -157,7 +167,11 @@
         messageTextarea.value = data.content;
       } catch (err) {
         console.error(err);
-        showError('Failed to send message');
+        if (err.name === 'AbortError') {
+          showError('Request timed out after 30 seconds');
+        } else {
+          showError('Failed to send message');
+        }
       } finally {
         setLoading(false);
       }

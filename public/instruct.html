@@ -110,6 +110,12 @@
       const config = await fetchConfig();
       const modelSelect = document.getElementById('models');
       const modeSelect = document.getElementById('mode');
+      const modelInput = document.getElementById('model');
+
+      // Add click handler to select all text in model input
+      modelInput.addEventListener('click', function () {
+        this.select();
+      });
 
       // Populate model options
       globalConfig.models.forEach(model => {
@@ -171,7 +177,11 @@
       };
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         const response = await fetch('/instruct', {
+          signal: controller.signal,
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -184,7 +194,11 @@
         messageTextarea.value = data.content;
       } catch (err) {
         console.error(err);
-        showError('Failed to send message');
+        if (err.name === 'AbortError') {
+          showError('Request timed out after 30 seconds');
+        } else {
+          showError('Failed to send message');
+        }
       } finally {
         setLoading(false);
       }

@@ -95,6 +95,12 @@
     async function initializeSelects() {
       const config = await fetchConfig();
       const modelDatalist = document.getElementById('models');
+      const modelInput = document.getElementById('model');
+
+      // Add click handler to select all text in model input
+      modelInput.addEventListener('click', function () {
+        this.select();
+      });
 
       // Populate model options
       config.models.forEach(model => {
@@ -168,7 +174,11 @@
       renderMessages();
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         const response = await fetch('/chat', {
+          signal: controller.signal,
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -194,7 +204,17 @@
         renderMessages();
       } catch (error) {
         console.error('Error:', error);
-        // Could add error handling UI here
+        if (error.name === 'AbortError') {
+          messages.push({
+            role: 'system',
+            content: 'Request timed out after 30 seconds'
+          });
+        } else {
+          messages.push({
+            role: 'system',
+            content: 'Failed to send message'
+          });
+        }
       } finally {
         setLoading(false);
       }

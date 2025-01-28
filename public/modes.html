@@ -110,6 +110,12 @@
     async function initializeSelects() {
       const config = await fetchConfig();
       const modelDatalist = document.getElementById('models');
+      const modelInput = document.getElementById('model');
+
+      // Add click handler to select all text in model input
+      modelInput.addEventListener('click', function () {
+        this.select();
+      });
 
       // Clear existing options
       modelDatalist.innerHTML = '';
@@ -164,7 +170,11 @@
       };
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         const response = await fetch('/modes', {
+          signal: controller.signal,
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -177,25 +187,28 @@
         messageTextarea.value = data.content;
       } catch (err) {
         console.error(err);
-        showError('Failed to send message');
-      } finally {
-        setLoading(false);
+        if (err.name === 'AbortError') {
+          showError('Request timed out after 30 seconds');
+        } else {
+          showError('Failed to send message');
+        } finally {
+          setLoading(false);
+        }
       }
-    }
 
-    function handleKeyDown(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        form.requestSubmit();
+      function handleKeyDown(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          form.requestSubmit();
+        }
       }
-    }
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', async () => {
-      await initializeSelects();
-      form.addEventListener('submit', handleSubmit);
-      messageTextarea.addEventListener('keydown', handleKeyDown);
-    });
+      // Initialize
+      document.addEventListener('DOMContentLoaded', async () => {
+        await initializeSelects();
+        form.addEventListener('submit', handleSubmit);
+        messageTextarea.addEventListener('keydown', handleKeyDown);
+      });
   </script>
 </body>
 
