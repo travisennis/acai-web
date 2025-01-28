@@ -69,8 +69,10 @@ async function processFileCommand(context: CommandContext) {
     );
     return true;
   } catch (error) {
-    if (error.code === 'ENOENT') {
-      processedLines.push(`Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`);
+    if (error.code === "ENOENT") {
+      processedLines.push(
+        `Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`,
+      );
     } else {
       processedLines.push(`Error reading file ${filePath}: ${error.message}`);
     }
@@ -93,8 +95,10 @@ async function processFilesCommand(context: CommandContext) {
         `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
       );
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        processedLines.push(`Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`);
+      if (error.code === "ENOENT") {
+        processedLines.push(
+          `Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`,
+        );
       } else {
         processedLines.push(`Error reading file ${filePath}: ${error.message}`);
       }
@@ -113,10 +117,14 @@ async function processDirCommand(context: CommandContext) {
     const tree = await directoryTree(fullPath);
     processedLines.push(`File tree:\n${tree}\n`);
   } catch (error) {
-    if (error.code === 'ENOENT') {
-      processedLines.push(`Error: Directory not found: ${dirPath}\nPlease check that the directory path is correct and exists.`);
+    if (error.code === "ENOENT") {
+      processedLines.push(
+        `Error: Directory not found: ${dirPath}\nPlease check that the directory path is correct and exists.`,
+      );
     } else {
-      processedLines.push(`Error reading directory ${dirPath}: ${error.message}`);
+      processedLines.push(
+        `Error reading directory ${dirPath}: ${error.message}`,
+      );
     }
   }
   return true;
@@ -136,7 +144,9 @@ async function processUrlCommand(context: CommandContext) {
 
 function processCommitCommand(context: CommandContext) {
   const { line, processedLines } = context;
-  processedLines.push("Read the code changes in the current directory and write a commit message and commit it. ");
+  processedLines.push(
+    "Read the code changes in the current directory and write a commit message and commit it. ",
+  );
   return true;
 }
 
@@ -202,7 +212,13 @@ export async function processPrompt(
       };
       fileDirectiveFound = true;
       await commandHandlers[command](context);
-    } else if (!(line.startsWith("@projectdir") || line.startsWith("@pdf") || line.startsWith("@commit"))) {
+    } else if (
+      !(
+        line.startsWith("@projectdir") ||
+        line.startsWith("@pdf") ||
+        line.startsWith("@commit")
+      )
+    ) {
       processedLines.push(line);
     }
   }
