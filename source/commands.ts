@@ -69,12 +69,14 @@ async function processFileCommand(context: CommandContext) {
     );
     return true;
   } catch (error) {
-    if (error.code === "ENOENT") {
+    if ((error as { code: string }).code === "ENOENT") {
       processedLines.push(
         `Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`,
       );
     } else {
-      processedLines.push(`Error reading file ${filePath}: ${error.message}`);
+      processedLines.push(
+        `Error reading file ${filePath}: ${(error as Error).message}`,
+      );
     }
     return true;
   }
@@ -95,12 +97,14 @@ async function processFilesCommand(context: CommandContext) {
         `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
       );
     } catch (error) {
-      if (error.code === "ENOENT") {
+      if ((error as { code: string }).code === "ENOENT") {
         processedLines.push(
           `Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`,
         );
       } else {
-        processedLines.push(`Error reading file ${filePath}: ${error.message}`);
+        processedLines.push(
+          `Error reading file ${filePath}: ${(error as Error).message}`,
+        );
       }
     }
   }
@@ -117,13 +121,13 @@ async function processDirCommand(context: CommandContext) {
     const tree = await directoryTree(fullPath);
     processedLines.push(`File tree:\n${tree}\n`);
   } catch (error) {
-    if (error.code === "ENOENT") {
+    if ((error as { code: string }).code === "ENOENT") {
       processedLines.push(
         `Error: Directory not found: ${dirPath}\nPlease check that the directory path is correct and exists.`,
       );
     } else {
       processedLines.push(
-        `Error reading directory ${dirPath}: ${error.message}`,
+        `Error reading directory ${dirPath}: ${(error as Error).message}`,
       );
     }
   }
@@ -143,7 +147,7 @@ async function processUrlCommand(context: CommandContext) {
 }
 
 function processCommitCommand(context: CommandContext) {
-  const { line, processedLines } = context;
+  const { processedLines } = context;
   processedLines.push(
     "Read the code changes in the current directory and write a commit message and commit it. ",
   );
@@ -241,7 +245,7 @@ export async function processPrompt(
           processedLines,
           attachments,
         };
-        await processCommitCommand(context);
+        processCommitCommand(context);
       } else if (line.startsWith("@pdf")) {
         const context = {
           baseDir,
