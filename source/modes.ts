@@ -28,7 +28,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { processPrompt } from "./commands.ts";
 
-export const app = new Hono().post(
+const app = new Hono().post(
   "/",
   zValidator(
     "json",

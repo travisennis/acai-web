@@ -25,7 +25,7 @@
     "@socket.io/redis-streams-adapter": "^0.2.2",
     "@travisennis/acai-core": "^0.0.12",
     "@travisennis/stdlib": "^0.0.1",
-    "ai": "^4.1.10",
+    "ai": "^4.1.11",
     "hono": "^4.6.19",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1",
@@ -35,8 +35,6 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@types/node": "^22.12.0",
-    "prettier": "3.4.2",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
 }

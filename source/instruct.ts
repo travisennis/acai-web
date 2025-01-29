@@ -36,7 +36,7 @@ import { processPrompt } from "./commands.ts";
 
 const modes = ["normal", "research", "code", "code-interpreter"] as const;
 
-export const app = new Hono()
+const app = new Hono()
   .get("/", (c) => {
     return c.json(
       {
