@@ -278,7 +278,7 @@ Only respond with the tools that are most useful for this task. A task may requi
         .with("code-interpreter", () => 10)
         .exhaustive();
 
-      const { text, reasoning, experimental_providerMetadata } =
+      const { text, reasoning, response, experimental_providerMetadata } =
         await generateText({
           model: wrapLanguageModel(
             languageModel(chosenModel),
@@ -295,6 +295,12 @@ Only respond with the tools that are most useful for this task. A task may requi
           messages,
           maxSteps,
         });
+
+      console.dir(response);
+
+      for (const msg of response.messages) {
+        console.info(JSON.stringify(msg, null, 2));
+      }
 
       // access the grounding metadata. Casting to the provider metadata type
       // is optional but provides autocomplete and type safety.
