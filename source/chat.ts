@@ -12,7 +12,7 @@ import { type CoreMessage, generateText } from "ai";
 import { type Env, Hono } from "hono";
 import { z } from "zod";
 
-const app = new Hono<Env>();
+export const app = new Hono<Env>();
 
 const messages: CoreMessage[] = [];
 
@@ -69,5 +69,3 @@ app.post(
     );
   },
 );
-
-export default app;

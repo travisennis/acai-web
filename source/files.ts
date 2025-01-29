@@ -5,7 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 
-const app = new Hono();
+export const app = new Hono();
 
 const baseDir = "/Users/travisennis/Github";
 const FILES_DIR = path.join(baseDir, "files");
@@ -150,5 +150,3 @@ app
       return c.json({ error: "Failed to delete file" }, 500);
     }
   });
-
-export default app;

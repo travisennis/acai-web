@@ -7,7 +7,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import envPaths from "@travisennis/stdlib/env";
 
-const app = new Hono();
+export const app = new Hono();
 
 interface Message {
   role: string;
@@ -189,5 +189,3 @@ app
       return c.json({ error: "Failed to read interaction" }, 500);
     }
   });
-
-export default app;

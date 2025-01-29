@@ -5,7 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 
-const app = new Hono();
+export const app = new Hono();
 
 const baseDir = "/Users/travisennis/Github";
 const PROMPTS_DIR = path.join(baseDir, "prompts");
@@ -91,11 +91,11 @@ app
         .then(() => true)
         .catch(() => false);
 
-      if (!fileExists) {
-        await fs.writeFile(filePath, content, "utf-8");
-      } else {
+      if (fileExists) {
         throw new Error(`File already exists: ${filePath}.`);
       }
+
+      await fs.writeFile(filePath, content, "utf-8");
 
       const promptMetadata: PromptMetadata = {
         id,
@@ -168,5 +168,3 @@ app
       return c.json({ error: "Failed to delete prompt" }, 500);
     }
   });
-
-export default app;

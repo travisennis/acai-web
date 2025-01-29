@@ -36,7 +36,7 @@ import { processPrompt } from "./commands.ts";
 
 const modes = ["normal", "research", "code", "code-interpreter"] as const;
 
-const app = new Hono()
+export const app = new Hono()
   .get("/", (c) => {
     return c.json(
       {
@@ -319,9 +319,8 @@ Only respond with the tools that are most useful for this task. A task may requi
     },
   );
 
-export default app;
-
 function parseMetadata(
+  // biome-ignore lint/style/useNamingConvention: <third-party api>
   experimental_providerMetadata: ProviderMetadata | undefined,
 ) {
   const metadata = experimental_providerMetadata?.google as

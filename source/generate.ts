@@ -12,7 +12,7 @@ import { type LanguageModel, generateText } from "ai";
 import { type Env, Hono } from "hono";
 import { z } from "zod";
 
-const app = new Hono<Env>();
+export const app = new Hono<Env>();
 
 app.post(
   "/",
@@ -234,5 +234,3 @@ async function loop(
     chainOfThought.push({ thoughts: newThoughts, result: newResult });
   }
 }
-
-export default app;

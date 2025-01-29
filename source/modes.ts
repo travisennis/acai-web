@@ -28,7 +28,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { processPrompt } from "./commands.ts";
 
-const app = new Hono().post(
+export const app = new Hono().post(
   "/",
   zValidator(
     "json",
@@ -171,5 +171,3 @@ const app = new Hono().post(
     );
   },
 );
-
-export default app;

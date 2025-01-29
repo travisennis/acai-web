@@ -1,19 +1,19 @@
-import { serveStatic } from "@hono/node-server/serve-static";
-import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { createNodeWebSocket } from "@hono/node-ws";
+import { createAdapter } from "@socket.io/redis-streams-adapter";
+import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createClient } from "redis";
 import { Server } from "socket.io";
-import { createAdapter } from "@socket.io/redis-streams-adapter";
-import { createNodeWebSocket } from "@hono/node-ws";
-import chatApp from "./chat.ts";
-import instructApp from "./instruct.ts";
-import historyApp from "./history.ts";
-import modesApp from "./modes.ts";
-import generateApp from "./generate.ts";
-import filesApp from "./files.ts";
-import configApp from "./config.ts";
-import promptsApp from "./prompts.ts";
+import { app as chatApp } from "./chat.ts";
+import { app as configApp } from "./config.ts";
+import { app as filesApp } from "./files.ts";
+import { app as generateApp } from "./generate.ts";
+import { app as historyApp } from "./history.ts";
+import { app as instructApp } from "./instruct.ts";
+import { app as modesApp } from "./modes.ts";
+import { app as promptsApp } from "./prompts.ts";
 
 const app = new Hono();
 
@@ -25,7 +25,7 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
 app.get(
   "/ws",
-  upgradeWebSocket((c) => {
+  upgradeWebSocket((_c) => {
     return {
       onOpen(event, ws) {
         console.info(`Open from client: ${event.type}`);
@@ -102,5 +102,3 @@ const honoServer = serve(
 injectWebSocket(honoServer);
 
 export type AppType = typeof routes;
-// export { io, redisClient };
-export default app;
