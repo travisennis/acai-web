@@ -5,6 +5,7 @@ import { directoryTree, loadUrl } from "@travisennis/acai-core/tools";
 
 interface CommandContext {
   baseDir: string;
+  projectDir: string | null;
   line: string;
   processedLines: string[];
   attachments: Buffer[];
@@ -38,7 +39,6 @@ async function processListPrompts(context: CommandContext) {
   const files = await fs.readdir(path.join(baseDir, "prompts"));
   const fileNamesWithoutExtension = files.map((file) => path.parse(file).name);
   processedLines.push(`Prompts:\n${fileNamesWithoutExtension.join("\n")}\n`);
-  return true;
 }
 
 async function processPromptCommand(context: CommandContext) {
@@ -53,7 +53,6 @@ async function processPromptCommand(context: CommandContext) {
     "utf8",
   );
   processedLines.push(`${f}`);
-  return true;
 }
 
 async function processFileCommand(context: CommandContext) {
@@ -67,7 +66,6 @@ async function processFileCommand(context: CommandContext) {
     processedLines.push(
       `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
     );
-    return true;
   } catch (error) {
     if ((error as { code: string }).code === "ENOENT") {
       processedLines.push(
@@ -78,7 +76,6 @@ async function processFileCommand(context: CommandContext) {
         `Error reading file ${filePath}: ${(error as Error).message}`,
       );
     }
-    return true;
   }
 }
 
@@ -108,7 +105,6 @@ async function processFilesCommand(context: CommandContext) {
       }
     }
   }
-  return true;
 }
 
 async function processDirCommand(context: CommandContext) {
@@ -131,7 +127,6 @@ async function processDirCommand(context: CommandContext) {
       );
     }
   }
-  return true;
 }
 
 async function processUrlCommand(context: CommandContext) {
@@ -143,7 +138,6 @@ async function processUrlCommand(context: CommandContext) {
   } catch (error) {
     processedLines.push(`Url:${urlPath}\nStatus: ${error}`);
   }
-  return true;
 }
 
 function processCommitCommand(context: CommandContext) {
@@ -151,7 +145,7 @@ function processCommitCommand(context: CommandContext) {
   processedLines.push(
     "Read the code changes in the current directory and write a commit message and commit it. ",
   );
-  return true;
+  return Promise.resolve();
 }
 
 function processProjectDirCommand(context: CommandContext) {
@@ -160,13 +154,14 @@ function processProjectDirCommand(context: CommandContext) {
   const projectDir = path.join(baseDir, project);
 
   if (existsSync(projectDir)) {
+    context.projectDir = projectDir;
     processedLines.push(
-      `I'm giving you access to the following directory ${projectDir}\n`,
+      `I'm giving you access to the following directory ${projectDir}`,
     );
   } else {
     processedLines.push(`@projectdir ${projectDir} does not exist.`);
   }
-  return projectDir;
+  return Promise.resolve();
 }
 
 async function processPdfCommand(context: CommandContext) {
@@ -176,12 +171,11 @@ async function processPdfCommand(context: CommandContext) {
   const buffer = await response.arrayBuffer();
   const pdfBuffer = Buffer.from(buffer);
   attachments.push(pdfBuffer);
-  return false;
 }
 
 const commandHandlers: Record<
   string,
-  (context: CommandContext) => Promise<boolean | string | null>
+  (context: CommandContext) => Promise<void>
 > = {
   "@list-prompts": processListPrompts,
   "@prompt": processPromptCommand,
@@ -191,17 +185,26 @@ const commandHandlers: Record<
   "@url": processUrlCommand,
 };
 
+const secondPassCommandHandlers: Record<
+  string,
+  (context: CommandContext) => Promise<void>
+> = {
+  "@projectdir": processProjectDirCommand,
+  "@commit": processCommitCommand,
+  "@pdf": processPdfCommand,
+};
+
 export async function processPrompt(
   message: string,
   { baseDir }: { baseDir: string },
 ) {
   const lines = message.split("\n");
-  const processedLines: string[] = [];
+  let processedLines: string[] = [];
   const attachments: Buffer[] = [];
   let projectDir: string | null = null;
   let fileDirectiveFound = false;
 
-  // First pass: Process all commands except @projectdir and @pdf
+  // First pass: Process all commands except @projectdir, @commit and @pdf
   for (const line of lines) {
     const command = Object.keys(commandHandlers).find((cmd) =>
       line.startsWith(cmd),
@@ -210,52 +213,40 @@ export async function processPrompt(
     if (command) {
       const context = {
         baseDir,
+        projectDir,
         line,
         processedLines,
         attachments,
       };
       fileDirectiveFound = true;
       await commandHandlers[command](context);
-    } else if (
-      !(
-        line.startsWith("@projectdir") ||
-        line.startsWith("@pdf") ||
-        line.startsWith("@commit")
-      )
-    ) {
+    } else {
       processedLines.push(line);
     }
   }
-
   // Second pass: Process @projectdir and @pdf only if no other commands were found
   if (!fileDirectiveFound) {
-    for (const line of lines) {
-      if (line.startsWith("@projectdir")) {
-        const context = {
+    const temp: string[] = [];
+    for (const line of processedLines) {
+      const command = Object.keys(secondPassCommandHandlers).find((cmd) =>
+        line.startsWith(cmd),
+      );
+
+      if (command) {
+        const context: CommandContext = {
           baseDir,
+          projectDir,
           line,
-          processedLines,
+          processedLines: temp,
           attachments,
         };
-        projectDir = processProjectDirCommand(context);
-      } else if (line.startsWith("@commit")) {
-        const context = {
-          baseDir,
-          line,
-          processedLines,
-          attachments,
-        };
-        processCommitCommand(context);
-      } else if (line.startsWith("@pdf")) {
-        const context = {
-          baseDir,
-          line,
-          processedLines,
-          attachments,
-        };
-        await processPdfCommand(context);
+        await secondPassCommandHandlers[command](context);
+        projectDir = context.projectDir;
+      } else {
+        temp.push(line);
       }
     }
+    processedLines = temp;
   }
 
   return {
