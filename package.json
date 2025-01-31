@@ -25,7 +25,7 @@
     "@socket.io/redis-streams-adapter": "^0.2.2",
     "@travisennis/acai-core": "^0.0.12",
     "@travisennis/stdlib": "^0.0.1",
-    "ai": "^4.1.11",
+    "ai": "^4.1.12",
     "hono": "^4.6.19",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1",
