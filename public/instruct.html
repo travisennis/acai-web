@@ -31,6 +31,8 @@
         <form id="chatForm" class="chat-form">
           <div class="input-section">
             <div class="message-container">
+              <textarea id="systemPrompt" name="systemPrompt" class="message-textarea"
+                placeholder="Enter system prompt here..."></textarea>
               <textarea id="message" name="message" class="message-textarea"
                 placeholder="Enter your message here...(Ctrl+Enter to submit)"></textarea>
               <div id="error" class="error-message"></div>
@@ -169,6 +171,7 @@
       hideError();
 
       const jsonBody = {
+        system: formData.get('systemPrompt'),
         message: formData.get('message'),
         model: formData.get('model'),
         maxTokens: Number(formData.get('maxTokens')),

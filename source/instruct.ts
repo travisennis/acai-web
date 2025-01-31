@@ -53,12 +53,13 @@ export const app = new Hono()
         model: z.string().optional(),
         temperature: z.coerce.number().optional(),
         maxTokens: z.coerce.number().optional(),
+        system: z.string().optional(),
         message: z.string(),
         mode: z.string().optional(),
       }),
     ),
     async (c) => {
-      const { model, maxTokens, temperature, message, mode } =
+      const { model, maxTokens, temperature, system, message, mode } =
         c.req.valid("json");
 
       const chosenModel: ModelName = isSupportedModel(model)
@@ -252,24 +253,26 @@ Only respond with the tools that are most useful for this task. A task may requi
         .with("code-interpreter", () => [...objectKeys(codeInterpreterTool)])
         .exhaustive();
 
-      const systemPrompt = match(chosenMode)
-        .with(
-          "normal",
-          () =>
-            "You are a very helpful assistant that is focused on helping solve hard problems.",
-        )
-        .with(
-          "research",
-          () =>
-            `You are research assistant. Help me understand difficult topics. Today's date is ${(new Date()).toISOString()}`,
-        )
-        .with("code", () => "You are software engineering assistant.")
-        .with(
-          "code-interpreter",
-          () =>
-            "You are a very helpful assistant that is focused on helping solve hard problems.",
-        )
-        .exhaustive();
+      const systemPrompt =
+        system ??
+        match(chosenMode)
+          .with(
+            "normal",
+            () =>
+              "You are a very helpful assistant that is focused on helping solve hard problems.",
+          )
+          .with(
+            "research",
+            () =>
+              `You are research assistant. Help me understand difficult topics. Today's date is ${(new Date()).toISOString()}`,
+          )
+          .with("code", () => "You are software engineering assistant.")
+          .with(
+            "code-interpreter",
+            () =>
+              "You are a very helpful assistant that is focused on helping solve hard problems.",
+          )
+          .exhaustive();
 
       const maxSteps = match(chosenMode)
         .with("normal", () => 3)
@@ -278,7 +281,7 @@ Only respond with the tools that are most useful for this task. A task may requi
         .with("code-interpreter", () => 10)
         .exhaustive();
 
-      const { text, reasoning, response, experimental_providerMetadata } =
+      const { text, reasoning, experimental_providerMetadata } =
         await generateText({
           model: wrapLanguageModel(
             languageModel(chosenModel),
@@ -296,17 +299,11 @@ Only respond with the tools that are most useful for this task. A task may requi
           maxSteps,
         });
 
-      console.dir(response);
-
-      for (const msg of response.messages) {
-        console.info(JSON.stringify(msg, null, 2));
-      }
-
       // access the grounding metadata. Casting to the provider metadata type
       // is optional but provides autocomplete and type safety.
       const metadata = parseMetadata(experimental_providerMetadata);
 
-      const thinkingBlock = `<think>\n${reasoning}\n</think>\n`;
+      const thinkingBlock = `<think>\n${reasoning}\n</think>\n\n`;
       const result = `${message}\n\n${reasoning ? thinkingBlock : ""}${text}`;
 
       return c.json(
