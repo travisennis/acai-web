@@ -170,8 +170,9 @@
       setLoading(true);
       hideError();
 
+      const system = formData.get('systemPrompt');
       const jsonBody = {
-        system: formData.get('systemPrompt'),
+        system: system && system.length === 0 ? undefined : system,
         message: formData.get('message'),
         model: formData.get('model'),
         maxTokens: Number(formData.get('maxTokens')),

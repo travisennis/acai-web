@@ -19,12 +19,12 @@ import {
   createSequentialThinkingTool,
   createUrlTools,
 } from "@travisennis/acai-core/tools";
-import { join } from "@travisennis/stdlib/desm";
 import envPaths from "@travisennis/stdlib/env";
-import { objectKeys } from "@travisennis/stdlib/object";
+import { objectEntries, objectKeys } from "@travisennis/stdlib/object";
 import {
   type CoreMessage,
   type ProviderMetadata,
+  type Tool,
   type UserContent,
   generateText,
   tool,
@@ -71,12 +71,22 @@ export const app = new Hono()
           ? (mode as (typeof modes)[number])
           : "normal";
 
-      const memoryFilePath = join(import.meta.url, "..", "data", "memory.json");
+      const dataDir = envPaths("acai").data;
+      const memoryFilePath = path.join(dataDir, "memory.json");
 
       const stateDir = envPaths("acai").state;
       const messagesFilePath = path.join(stateDir, "messages.jsonl");
 
-      const baseDir = "/Users/travisennis/Github";
+      const baseDir = process.env.BASE_DIR;
+      if (!baseDir) {
+        return c.json(
+          {
+            message: "Base directory is not set.",
+          },
+          500,
+        );
+      }
+
       const pp = await processPrompt(message, {
         baseDir,
       });
@@ -128,15 +138,15 @@ export const app = new Hono()
       );
 
       const fsTools = await createFileSystemTools({
-        workingDir: pp.projectDir ?? `${baseDir}/temp`,
+        workingDir: pp.projectDir ?? baseDir,
       });
 
       const gitTools = await createGitTools({
-        workingDir: pp.projectDir ?? `${baseDir}/temp`,
+        workingDir: pp.projectDir ?? baseDir,
       });
 
       const codeTools = createCodeTools({
-        baseDir: pp.projectDir ?? `${baseDir}/temp`,
+        baseDir: pp.projectDir ?? baseDir,
       });
 
       const codeInterpreterTool = createCodeInterpreterTool({});
@@ -174,7 +184,6 @@ export const app = new Hono()
                   ),
                   temperature: temperature ?? 0.3,
                   maxTokens: maxTokens ?? 8192,
-                  system: systemPrompt,
                   prompt: query,
                 });
               const metadata = parseMetadata(experimental_providerMetadata);
@@ -202,56 +211,64 @@ export const app = new Hono()
         ...webSearchTools,
       } as const;
 
-      const { text: chosenTools } = await generateText({
-        model: languageModel("google:flash2"),
-        system: `You task is to determine the tools that are most useful for the given task.
+      //       const { text: chosenTools } = await generateText({
+      //         model: languageModel("google:flash2"),
+      //         system: `You task is to determine the tools that are most useful for the given task.
 
-If the task is to understand a project, code base, or set of files then use the following tools:
-${[...objectKeys(fsTools), ...objectKeys(gitTools)].join("\n")}
+      // If the task is to understand a project, code base, or set of files then use the following tools:
+      // ${[...objectKeys(fsTools), ...objectKeys(gitTools)].join("\n")}
 
-If the task is to update or edit a project, code base, or set of files then use the following tools:
-${[
-  ...objectKeys(codeTools),
-  ...objectKeys(codeInterpreterTool),
-  ...objectKeys(fsTools),
-  ...objectKeys(gitTools),
-].join("\n")}
+      // If the task is to update or edit a project, code base, or set of files then use the following tools:
+      // ${[
+      //   ...objectKeys(codeTools),
+      //   ...objectKeys(codeInterpreterTool),
+      //   ...objectKeys(fsTools),
+      //   ...objectKeys(gitTools),
+      // ].join("\n")}
 
-If the task is to work with bookmarks then use the following tools:
-${[...objectKeys(raindropTools), ...objectKeys(urlTools)].join("\n")}
+      // If the task is to work with bookmarks then use the following tools:
+      // ${[...objectKeys(raindropTools), ...objectKeys(urlTools)].join("\n")}
 
-If the task is to read content from URLs then use the following bookmarks:
-${[...objectKeys(urlTools)].join("\n")}
+      // If the task is to read content from URLs then use the following bookmarks:
+      // ${[...objectKeys(urlTools)].join("\n")}
 
-If the task is to search for additional information on the web then use the following tools:
-${[...objectKeys(webSearchTools)].join("\n")}
+      // If the task is to search for additional information on the web then use the following tools:
+      // ${[...objectKeys(webSearchTools)].join("\n")}
 
-If the task is to think through problems or brainstorm ideas then use the following tools:
-${[...objectKeys(thinkingTools), ...objectKeys(brainstormingTools)].join("\n")}
+      // If the task is to think through problems or brainstorm ideas then use the following tools:
+      // ${[...objectKeys(thinkingTools), ...objectKeys(brainstormingTools)].join("\n")}
 
-Only respond with the tools that are most useful for this task. A task may require tools from multiple lists. Your response should be a comma-separated list.`,
-        prompt: `Task: ${finalMessage}: Intent:`,
-      });
+      // Only respond with the tools that are most useful for this task. A task may require tools from multiple lists. Your response should be a comma-separated list.`,
+      //         prompt: `Task: ${finalMessage}: Output:`,
+      //       });
 
-      console.info(chosenTools);
+      //       console.info(chosenTools);
+      //       const activeTools = chosenTools
+      //         .split(",")
+      //         .map((tool) => tool.trim())
+      //         .filter((tool) =>
+      //           objectKeys(allTools).includes(tool as keyof typeof allTools),
+      //         ) as (keyof typeof allTools)[];
+      //
+      const activeTools = await findTools({ tools: allTools, finalMessage });
 
-      const activeTools: (keyof typeof allTools)[] = match(chosenMode)
-        .with("normal", () => [])
-        .with("research", () => [
-          ...objectKeys(thinkingTools),
-          ...objectKeys(brainstormingTools),
-          ...objectKeys(raindropTools),
-          ...objectKeys(urlTools),
-          ...objectKeys(webSearchTools),
-        ])
-        .with("code", () => [
-          ...objectKeys(codeTools),
-          ...objectKeys(codeInterpreterTool),
-          ...objectKeys(fsTools),
-          ...objectKeys(gitTools),
-        ])
-        .with("code-interpreter", () => [...objectKeys(codeInterpreterTool)])
-        .exhaustive();
+      // const activeTools: (keyof typeof allTools)[] = match(chosenMode)
+      //   .with("normal", () => [])
+      //   .with("research", () => [
+      //     ...objectKeys(thinkingTools),
+      //     ...objectKeys(brainstormingTools),
+      //     ...objectKeys(raindropTools),
+      //     ...objectKeys(urlTools),
+      //     ...objectKeys(webSearchTools),
+      //   ])
+      //   .with("code", () => [
+      //     ...objectKeys(codeTools),
+      //     ...objectKeys(codeInterpreterTool),
+      //     ...objectKeys(fsTools),
+      //     ...objectKeys(gitTools),
+      //   ])
+      //   .with("code-interpreter", () => [...objectKeys(codeInterpreterTool)])
+      //   .exhaustive();
 
       const systemPrompt =
         system ??
@@ -274,12 +291,7 @@ Only respond with the tools that are most useful for this task. A task may requi
           )
           .exhaustive();
 
-      const maxSteps = match(chosenMode)
-        .with("normal", () => 3)
-        .with("research", () => 10)
-        .with("code", () => 15)
-        .with("code-interpreter", () => 10)
-        .exhaustive();
+      const maxSteps = 15;
 
       const { text, reasoning, experimental_providerMetadata } =
         await generateText({
@@ -358,4 +370,39 @@ function parseMetadata(
   return {
     sources,
   };
+}
+
+async function findTools<T extends Record<string, Tool<any>>>({
+  tools,
+  finalMessage,
+}: { tools: T; finalMessage: string }): Promise<(keyof T)[]> {
+  const toolDescriptions = objectEntries(tools).map(
+    (tool) =>
+      `Name: ${tool[0] as string}\nDescription: ${(tool[1] as { description: string }).description}`,
+  );
+
+  const system = `You task is to determine the tools that are most useful for the given task.
+
+Here are the tools available:
+${toolDescriptions.join("\n\n")}
+
+Only respond with the tools that are most useful for this task. Your response should be a comma-separated list of the tool names.`;
+
+  console.log(system);
+
+  const { text: chosenTools } = await generateText({
+    model: languageModel("google:flash2"),
+    system,
+    prompt: `Task: ${finalMessage}: Output:`,
+  });
+
+  console.log(chosenTools);
+  const activeTools = chosenTools
+    .split(",")
+    .map((tool) => tool.trim())
+    .filter((tool) =>
+      objectKeys(tools).includes(tool as keyof typeof tools),
+    ) as (keyof typeof tools)[];
+
+  return activeTools;
 }
