@@ -62,10 +62,6 @@
                     class="settings-input">
                 </div>
 
-                <div class="settings-group">
-                  <label for="mode" class="settings-label">Mode</label>
-                  <select id="mode" name="mode" class="settings-input"></select>
-                </div>
               </div>
             </div>
           </div>
@@ -111,7 +107,6 @@
       const globalConfig = await fetchGlobalConfig();
       const config = await fetchConfig();
       const modelSelect = document.getElementById('models');
-      const modeSelect = document.getElementById('mode');
       const modelInput = document.getElementById('model');
 
       // Add click handler to select all text in model input
@@ -127,14 +122,6 @@
         //if (model === 'anthropic:sonnet') option.selected = true;
         modelSelect.appendChild(option);
       });
-
-      config.modes.forEach(mode => {
-        const option = document.createElement('option');
-        option.value = mode;
-        option.textContent = mode;
-        if (model === 'normal') option.selected = true;
-        modeSelect.appendChild(option);
-      })
     }
 
     function setLoading(loading) {
@@ -177,7 +164,6 @@
         model: formData.get('model'),
         maxTokens: Number(formData.get('maxTokens')),
         temperature: Number(formData.get('temperature')),
-        mode: formData.get('mode')
       };
 
       try {

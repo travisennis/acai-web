@@ -30,17 +30,14 @@ import {
   generateText,
 } from "ai";
 import { Hono } from "hono";
-import { match } from "ts-pattern";
 import { z } from "zod";
 import { processPrompt } from "./commands.ts";
-
-const modes = ["normal", "research", "code", "code-interpreter"] as const;
 
 export const app = new Hono()
   .get("/", (c) => {
     return c.json(
       {
-        modes,
+        modes: [],
       },
       200,
     );
@@ -59,17 +56,12 @@ export const app = new Hono()
       }),
     ),
     async (c) => {
-      const { model, maxTokens, temperature, system, message, mode } =
+      const { model, maxTokens, temperature, system, message } =
         c.req.valid("json");
 
       const chosenModel: ModelName = isSupportedModel(model)
         ? model
         : "anthropic:sonnet";
-
-      const chosenMode =
-        mode && modes.includes(mode as (typeof modes)[number])
-          ? (mode as (typeof modes)[number])
-          : "normal";
 
       const dataDir = envPaths("acai").data;
       const memoryFilePath = path.join(dataDir, "memory.json");
@@ -187,24 +179,7 @@ export const app = new Hono()
 
       const systemPrompt =
         system ??
-        match(chosenMode)
-          .with(
-            "normal",
-            () =>
-              "You are a very helpful assistant that is focused on helping solve hard problems.",
-          )
-          .with(
-            "research",
-            () =>
-              `You are research assistant. Help me understand difficult topics. Today's date is ${(new Date()).toISOString()}`,
-          )
-          .with("code", () => "You are software engineering assistant.")
-          .with(
-            "code-interpreter",
-            () =>
-              "You are a very helpful assistant that is focused on helping solve hard problems.",
-          )
-          .exhaustive();
+        "You are a very helpful assistant that is focused on helping solve hard problems.";
 
       // #TODO: figure out how to adjust this based on query
       const maxSteps = 15;
