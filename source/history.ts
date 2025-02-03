@@ -123,7 +123,7 @@ app
           preview: interaction.response
             ? interaction.response.substring(0, 100) +
               (interaction.response.length > 100 ? "..." : "")
-            : "",
+            : "Tool Call",
         };
       });
 
@@ -162,7 +162,6 @@ app
       }
 
       const userMessage = interaction.prompt.find((p) => p.role === "user");
-
       let prompt = "";
       if (userMessage) {
         const userContent = userMessage.content;
@@ -177,7 +176,7 @@ app
       }
 
       const assistantMessage = interaction.response;
-      if (!assistantMessage) {
+      if (typeof assistantMessage === "undefined") {
         return c.json({ error: "Assistant message not found" }, 404);
       }
 
