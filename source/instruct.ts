@@ -180,64 +180,10 @@ export const app = new Hono()
         ...webSearchTools,
       } as const;
 
-      //       const { text: chosenTools } = await generateText({
-      //         model: languageModel("google:flash2"),
-      //         system: `You task is to determine the tools that are most useful for the given task.
-
-      // If the task is to understand a project, code base, or set of files then use the following tools:
-      // ${[...objectKeys(fsTools), ...objectKeys(gitTools)].join("\n")}
-
-      // If the task is to update or edit a project, code base, or set of files then use the following tools:
-      // ${[
-      //   ...objectKeys(codeTools),
-      //   ...objectKeys(codeInterpreterTool),
-      //   ...objectKeys(fsTools),
-      //   ...objectKeys(gitTools),
-      // ].join("\n")}
-
-      // If the task is to work with bookmarks then use the following tools:
-      // ${[...objectKeys(raindropTools), ...objectKeys(urlTools)].join("\n")}
-
-      // If the task is to read content from URLs then use the following bookmarks:
-      // ${[...objectKeys(urlTools)].join("\n")}
-
-      // If the task is to search for additional information on the web then use the following tools:
-      // ${[...objectKeys(webSearchTools)].join("\n")}
-
-      // If the task is to think through problems or brainstorm ideas then use the following tools:
-      // ${[...objectKeys(thinkingTools), ...objectKeys(brainstormingTools)].join("\n")}
-
-      // Only respond with the tools that are most useful for this task. A task may require tools from multiple lists. Your response should be a comma-separated list.`,
-      //         prompt: `Task: ${finalMessage}: Output:`,
-      //       });
-
-      //       console.info(chosenTools);
-      //       const activeTools = chosenTools
-      //         .split(",")
-      //         .map((tool) => tool.trim())
-      //         .filter((tool) =>
-      //           objectKeys(allTools).includes(tool as keyof typeof allTools),
-      //         ) as (keyof typeof allTools)[];
-      //
-      const activeTools = await findTools({ tools: allTools, finalMessage });
-
-      // const activeTools: (keyof typeof allTools)[] = match(chosenMode)
-      //   .with("normal", () => [])
-      //   .with("research", () => [
-      //     ...objectKeys(thinkingTools),
-      //     ...objectKeys(brainstormingTools),
-      //     ...objectKeys(raindropTools),
-      //     ...objectKeys(urlTools),
-      //     ...objectKeys(webSearchTools),
-      //   ])
-      //   .with("code", () => [
-      //     ...objectKeys(codeTools),
-      //     ...objectKeys(codeInterpreterTool),
-      //     ...objectKeys(fsTools),
-      //     ...objectKeys(gitTools),
-      //   ])
-      //   .with("code-interpreter", () => [...objectKeys(codeInterpreterTool)])
-      //   .exhaustive();
+      const activeTools = await chooseActiveTools({
+        tools: allTools,
+        message: finalMessage,
+      });
 
       const systemPrompt =
         system ??
@@ -260,9 +206,10 @@ export const app = new Hono()
           )
           .exhaustive();
 
+      // #TODO: figure out how to adjust this based on query
       const maxSteps = 15;
 
-      const { text, reasoning, experimental_providerMetadata } =
+      const { text, reasoning, toolCalls, experimental_providerMetadata } =
         await generateText({
           model: wrapLanguageModel(
             languageModel(chosenModel),
@@ -279,6 +226,12 @@ export const app = new Hono()
           messages,
           maxSteps,
         });
+
+      console.info(`Active tools: ${activeTools.join(", ")}`);
+      console.info(`Tools called: ${toolCalls.length}`);
+      console.info(
+        `Tools: ${toolCalls.map((toolCall) => toolCall.toolName).join(", ")}`,
+      );
 
       // access the grounding metadata. Casting to the provider metadata type
       // is optional but provides autocomplete and type safety.
@@ -341,10 +294,10 @@ function parseMetadata(
   };
 }
 
-async function findTools<T extends Record<string, Tool<any>>>({
+async function chooseActiveTools<T extends Record<string, Tool>>({
   tools,
-  finalMessage,
-}: { tools: T; finalMessage: string }): Promise<(keyof T)[]> {
+  message,
+}: { tools: T; message: string }): Promise<(keyof T)[]> {
   const toolDescriptions = objectEntries(tools).map(
     (tool) =>
       `Name: ${tool[0] as string}\nDescription: ${(tool[1] as { description: string }).description}`,
@@ -362,10 +315,9 @@ Only respond with the tools that are most useful for this task. Your response sh
   const { text: chosenTools } = await generateText({
     model: languageModel("google:flash2"),
     system,
-    prompt: `Task: ${finalMessage}: Output:`,
+    prompt: `Task: ${message}: Output:`,
   });
 
-  console.log(chosenTools);
   const activeTools = chosenTools
     .split(",")
     .map((tool) => tool.trim())
