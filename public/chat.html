@@ -190,7 +190,6 @@
             model: document.getElementById("model").value,
             maxTokens: Number(document.getElementById("maxTokens").value),
             temperature: Number(document.getElementById("temperature").value),
-            mode: document.getElementById("mode").value
           }),
         });
 
@@ -232,7 +231,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await initializeSelects();
       document.getElementById('chatForm').addEventListener('submit', handleSubmit);
-      document.getElementById("message").addEventListener('keydown', handleKeyDown);
+      document.getElementById("chat-message").addEventListener('keydown', handleKeyDown);
     });  
   </script>
 </body>
