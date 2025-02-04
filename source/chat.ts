@@ -24,6 +24,7 @@ import { type CoreMessage, generateText } from "ai";
 import { type Env, Hono } from "hono";
 import { z } from "zod";
 import { chooseActiveTools } from "./chooseActiveTools.ts";
+import { processPrompt } from "./commands.ts";
 import { parseMetadata } from "./parseMetadata.ts";
 
 const messages: CoreMessage[] = [];
@@ -66,9 +67,22 @@ app.post(
       );
     }
 
+    const pp = await processPrompt(message, {
+      baseDir,
+    });
+
+    if (pp.returnPrompt) {
+      return c.json(
+        {
+          content: pp.processedPrompt,
+        },
+        200,
+      );
+    }
+
     messages.push({
       role: "user",
-      content: message,
+      content: pp.processedPrompt,
     });
 
     const langModel = wrapLanguageModel(
