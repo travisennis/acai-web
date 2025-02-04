@@ -1,5 +1,4 @@
 import path from "node:path";
-import type { GoogleGenerativeAIProviderMetadata } from "@ai-sdk/google";
 import { zValidator } from "@hono/zod-validator";
 import {
   type ModelName,
@@ -21,15 +20,11 @@ import {
   createWebSearchTools,
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
-import { objectEntries, objectKeys } from "@travisennis/stdlib/object";
-import {
-  type CoreMessage,
-  type ProviderMetadata,
-  type Tool,
-  generateText,
-} from "ai";
+import { type CoreMessage, generateText } from "ai";
 import { type Env, Hono } from "hono";
 import { z } from "zod";
+import { chooseActiveTools } from "./chooseActiveTools.ts";
+import { parseMetadata } from "./parseMetadata.ts";
 
 const messages: CoreMessage[] = [];
 
@@ -178,75 +173,3 @@ app.post(
     );
   },
 );
-
-function parseMetadata(
-  experimental_providerMetadata: ProviderMetadata | undefined,
-) {
-  const metadata = experimental_providerMetadata?.google as
-    | GoogleGenerativeAIProviderMetadata
-    | undefined;
-
-  const sourceMap = new Map<
-    string,
-    { title: string; url: string; snippet: string }
-  >();
-
-  const chunks = metadata?.groundingMetadata?.groundingChunks || [];
-  const supports = metadata?.groundingMetadata?.groundingSupports || [];
-
-  chunks.forEach((chunk, index: number) => {
-    if (chunk.web?.uri && chunk.web?.title) {
-      const url = chunk.web.uri;
-      if (!sourceMap.has(url)) {
-        const snippets = supports
-          .filter((support) => support.groundingChunkIndices?.includes(index))
-          .map((support) => support.segment.text)
-          .join(" ");
-
-        sourceMap.set(url, {
-          title: chunk.web.title,
-          url: url,
-          snippet: snippets || "",
-        });
-      }
-    }
-  });
-
-  const sources = Array.from(sourceMap.values());
-
-  return {
-    sources,
-  };
-}
-
-async function chooseActiveTools<T extends Record<string, Tool>>({
-  tools,
-  message,
-}: { tools: T; message: string }): Promise<(keyof T)[]> {
-  const toolDescriptions = objectEntries(tools).map(
-    (tool) =>
-      `Name: ${tool[0] as string}\nDescription: ${(tool[1] as { description: string }).description}`,
-  );
-
-  const system = `You task is to determine the tools that are most useful for the given task.
-
-Here are the tools available:
-${toolDescriptions.join("\n\n")}
-
-Only respond with the tools that are most useful for this task. Your response should be a comma-separated list of the tool names.`;
-
-  const { text: chosenTools } = await generateText({
-    model: languageModel("google:flash2"),
-    system,
-    prompt: `Task: ${message}: Output:`,
-  });
-
-  const activeTools = chosenTools
-    .split(",")
-    .map((tool) => tool.trim())
-    .filter((tool) =>
-      objectKeys(tools).includes(tool as keyof typeof tools),
-    ) as (keyof typeof tools)[];
-
-  return activeTools;
-}
