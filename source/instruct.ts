@@ -178,23 +178,31 @@ export const app = new Hono()
       // #TODO: figure out how to adjust this based on query
       const maxSteps = 15;
 
-      const { text, reasoning, toolCalls, experimental_providerMetadata } =
-        await generateText({
-          model: wrapLanguageModel(
-            languageModel(chosenModel),
-            log,
-            usage,
-            auditMessage({ path: messagesFilePath }),
-          ),
-          temperature: temperature ?? 0.3,
-          maxTokens: maxTokens ?? 8192,
-          tools: allTools,
-          // biome-ignore lint/style/useNamingConvention: <external api>
-          experimental_activeTools: activeTools,
-          system: systemPrompt,
-          messages,
-          maxSteps,
-        });
+      const {
+        text,
+        reasoning,
+        toolCalls,
+        toolResults,
+        experimental_providerMetadata,
+      } = await generateText({
+        model: wrapLanguageModel(
+          languageModel(chosenModel),
+          log,
+          usage,
+          auditMessage({ path: messagesFilePath }),
+        ),
+        temperature: temperature ?? 0.3,
+        maxTokens: maxTokens ?? 8192,
+        tools: allTools,
+        // biome-ignore lint/style/useNamingConvention: <external api>
+        experimental_activeTools: activeTools,
+        system: systemPrompt,
+        messages,
+        maxSteps,
+      });
+
+      console.dir(toolCalls);
+      console.dir(toolResults);
 
       console.info(`Active tools: ${activeTools.join(", ")}`);
       console.info(`Tools called: ${toolCalls.length}`);

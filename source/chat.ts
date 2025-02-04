@@ -145,27 +145,30 @@ app.post(
       "You are a very helpful assistant that is focused on helping solve hard problems.";
     const maxSteps = 15;
 
-    const { text, reasoning, toolCalls, experimental_providerMetadata } =
-      await generateText({
-        model: wrapLanguageModel(
-          languageModel(chosenModel),
-          log,
-          usage,
-          auditMessage({ path: messagesFilePath }),
-        ),
-        temperature: temperature ?? 0.3,
-        maxTokens: maxTokens ?? 8192,
-        tools: allTools,
-        experimental_activeTools: activeTools,
-        system: systemPrompt,
-        messages,
-        maxSteps,
-      });
-
-    messages.push({
-      role: "assistant",
-      content: text,
+    const {
+      text,
+      response,
+      reasoning,
+      toolCalls,
+      experimental_providerMetadata,
+    } = await generateText({
+      model: wrapLanguageModel(
+        languageModel(chosenModel),
+        log,
+        usage,
+        auditMessage({ path: messagesFilePath }),
+      ),
+      temperature: temperature ?? 0.3,
+      maxTokens: maxTokens ?? 8192,
+      tools: allTools,
+      // biome-ignore lint/style/useNamingConvention: <explanation>
+      experimental_activeTools: activeTools,
+      system: systemPrompt,
+      messages,
+      maxSteps,
     });
+
+    messages.push(...response.messages);
 
     console.info(`Active tools: ${activeTools.join(", ")}`);
     console.info(`Tools called: ${toolCalls.length}`);
