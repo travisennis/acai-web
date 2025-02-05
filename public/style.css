@@ -415,6 +415,17 @@ select:focus {
   max-width: 70%;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
+  line-height: 2em;
+}
+
+.message-content ol,
+.message-content ul {
+  margin-left: 3em;
+}
+
+.message-content h3 {
+  margin-block-start: 1.5em;
+  ;
 }
 
 .message.user .message-content {
@@ -426,6 +437,7 @@ select:focus {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-primary);
+  max-width: 85%;
 }
 
 .chat-input-container {
