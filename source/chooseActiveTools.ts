@@ -8,15 +8,15 @@ export async function chooseActiveTools<T extends Record<string, Tool>>({
 }: { tools: T; message: string }): Promise<(keyof T)[]> {
   const toolDescriptions = objectEntries(tools).map(
     (tool) =>
-      `Name: ${tool[0] as string}\nDescription: ${(tool[1] as { description: string }).description}`,
+      `Name: "${tool[0] as string}"\nDescription: "${(tool[1] as { description: string }).description}"`,
   );
 
-  const system = `You task is to determine the tools that are most useful for the given task.
+  const system = `Your task is to determine the tools that are most useful for the user's given task which you will find in <task> tags.
 
-Here are the tools available:
+Here are the tools available to choose from:
 "${toolDescriptions.join("\n\n")}"
 
-Only respond with the tools that are most useful for this task. Your response should be a comma-separated list of the tool names.`;
+Make sure you fully understand the user's task, before deciding on the tools. Only respond with the tools that are most useful for the user's task. Your response should be a comma-separated list of the tool names. If not tools are needed then respond with an empty array.`;
 
   console.log(system);
 
