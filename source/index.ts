@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createClient } from "redis";
 import { Server } from "socket.io";
+import { connect } from "mongoose";
 import { app as chatApp } from "./chat.ts";
 import { app as configApp } from "./config.ts";
 import { app as filesApp } from "./files.ts";
@@ -94,6 +95,11 @@ const honoServer = serve(
       setInterval(() => {
         io.emit("ping");
       }, 15000);
+    }
+
+    if (process.env.MONGO_ATLAS_URI) {
+      console.info("Starting mongo server");
+      await connect(process.env.MONGO_ATLAS_URI);
     }
   },
 );

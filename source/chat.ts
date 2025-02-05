@@ -6,7 +6,7 @@ import {
   languageModel,
   wrapLanguageModel,
 } from "@travisennis/acai-core";
-import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
+import { auditMessage, log } from "@travisennis/acai-core/middleware";
 import {
   createBrainstormingTools,
   createCodeInterpreterTool,
@@ -25,6 +25,7 @@ import { type Env, Hono } from "hono";
 import { z } from "zod";
 import { chooseActiveTools } from "./chooseActiveTools.ts";
 import { processPrompt } from "./commands.ts";
+import { Interaction, type InteractionInterface } from "./database.ts";
 import { parseMetadata } from "./parseMetadata.ts";
 
 const messages: CoreMessage[] = [];
@@ -88,7 +89,6 @@ app.post(
     const langModel = wrapLanguageModel(
       languageModel(chosenModel),
       log,
-      usage,
       auditMessage({ path: messagesFilePath }),
     );
 
@@ -145,19 +145,16 @@ app.post(
       "You are a very helpful assistant that is focused on helping solve hard problems.";
     const maxSteps = 15;
 
+    const start = performance.now();
     const {
       text,
       response,
       reasoning,
       toolCalls,
+      usage,
       experimental_providerMetadata,
     } = await generateText({
-      model: wrapLanguageModel(
-        languageModel(chosenModel),
-        log,
-        usage,
-        auditMessage({ path: messagesFilePath }),
-      ),
+      model: langModel,
       temperature: temperature ?? 0.3,
       maxTokens: maxTokens ?? 8192,
       tools: allTools,
@@ -167,6 +164,25 @@ app.post(
       messages,
       maxSteps,
     });
+
+    const i: Omit<InteractionInterface, "timestamp"> = {
+      model: response.modelId,
+      params: {
+        temperature: temperature ?? 0.3,
+        maxTokens: maxTokens ?? 8192,
+        activeTools,
+      },
+      messages: messages.concat(response.messages),
+      usage: {
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+      },
+      app: "acai-chat",
+      duration: performance.now() - start,
+    };
+
+    const interaction = new Interaction(i);
+    await interaction.save();
 
     messages.push(...response.messages);
 

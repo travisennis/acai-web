@@ -6,7 +6,7 @@ import {
   languageModel,
   wrapLanguageModel,
 } from "@travisennis/acai-core";
-import { auditMessage, log, usage } from "@travisennis/acai-core/middleware";
+import { auditMessage, log } from "@travisennis/acai-core/middleware";
 import {
   createBrainstormingTools,
   createCodeInterpreterTool,
@@ -25,7 +25,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { chooseActiveTools } from "./chooseActiveTools.ts";
 import { processPrompt } from "./commands.ts";
+import { Interaction, type InteractionInterface } from "./database.ts";
 import { parseMetadata } from "./parseMetadata.ts";
+import { objectEntries } from "@travisennis/stdlib/object";
 
 export const app = new Hono()
   .get("/", (c) => {
@@ -119,7 +121,6 @@ export const app = new Hono()
       const langModel = wrapLanguageModel(
         languageModel(chosenModel),
         log,
-        usage,
         auditMessage({ path: messagesFilePath }),
       );
 
@@ -178,19 +179,17 @@ export const app = new Hono()
       // #TODO: figure out how to adjust this based on query
       const maxSteps = 15;
 
+      const start = performance.now();
       const {
         text,
         reasoning,
+        response,
         toolCalls,
         toolResults,
         experimental_providerMetadata,
+        usage,
       } = await generateText({
-        model: wrapLanguageModel(
-          languageModel(chosenModel),
-          log,
-          usage,
-          auditMessage({ path: messagesFilePath }),
-        ),
+        model: langModel,
         temperature: temperature ?? 0.3,
         maxTokens: maxTokens ?? 8192,
         tools: allTools,
@@ -209,6 +208,25 @@ export const app = new Hono()
       console.info(
         `Tools: ${toolCalls.map((toolCall) => toolCall.toolName).join(", ")}`,
       );
+
+      const i: Omit<InteractionInterface, "timestamp"> = {
+        model: response.modelId,
+        params: {
+          temperature: temperature ?? 0.3,
+          maxTokens: maxTokens ?? 8192,
+          activeTools,
+        },
+        messages: messages.concat(response.messages),
+        usage: {
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+        },
+        app: "acai-instruct",
+        duration: performance.now() - start,
+      };
+
+      const interaction = new Interaction(i);
+      await interaction.save();
 
       // access the grounding metadata. Casting to the provider metadata type
       // is optional but provides autocomplete and type safety.
