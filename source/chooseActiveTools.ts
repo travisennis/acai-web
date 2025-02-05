@@ -1,6 +1,6 @@
 import { languageModel, wrapLanguageModel } from "@travisennis/acai-core";
 import { objectEntries, objectKeys } from "@travisennis/stdlib/object";
-import { extractReasoningMiddleware, generateText, type Tool } from "ai";
+import { type Tool, extractReasoningMiddleware, generateText } from "ai";
 
 export async function chooseActiveTools<T extends Record<string, Tool>>({
   tools,
@@ -16,7 +16,7 @@ export async function chooseActiveTools<T extends Record<string, Tool>>({
 Here are the tools available to choose from:
 "${toolDescriptions.join("\n\n")}"
 
-Make sure you fully understand the user's task, before deciding on the tools. Only respond with the tools that are most useful for the user's task. Your response should be a comma-separated list of the tool names. If not tools are needed then respond with an empty array.`;
+Make sure you fully understand the user's task, before deciding on the tools. Only respond with the tools that are most useful for the user's task. Your response should be a comma-separated list of the tool names. Only return the tool name once in your list. If no tools are needed then respond with an empty array.`;
 
   console.log(system);
 
@@ -45,5 +45,5 @@ Make sure you fully understand the user's task, before deciding on the tools. On
 
   console.dir(activeTools);
 
-  return activeTools;
+  return [...new Set(activeTools)];
 }
