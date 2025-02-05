@@ -27,7 +27,6 @@ import { chooseActiveTools } from "./chooseActiveTools.ts";
 import { processPrompt } from "./commands.ts";
 import { Interaction, type InteractionInterface } from "./database.ts";
 import { parseMetadata } from "./parseMetadata.ts";
-import { objectEntries } from "@travisennis/stdlib/object";
 
 export const app = new Hono()
   .get("/", (c) => {
