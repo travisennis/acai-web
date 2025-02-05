@@ -176,7 +176,7 @@ export const app = new Hono()
         "You are a very helpful assistant that is focused on helping solve hard problems.";
 
       // #TODO: figure out how to adjust this based on query
-      const maxSteps = 15;
+      const maxSteps = 20;
 
       const start = performance.now();
       const {
