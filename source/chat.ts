@@ -25,10 +25,12 @@ import { type Env, Hono } from "hono";
 import { z } from "zod";
 import { chooseActiveTools } from "./chooseActiveTools.ts";
 import { processPrompt } from "./commands.ts";
-import { Interaction, type InteractionInterface } from "./database.ts";
+import {
+  Interaction,
+  type InteractionInterface,
+  ChatSession,
+} from "./database.ts";
 import { parseMetadata } from "./parseMetadata.ts";
-
-const messages: CoreMessage[] = [];
 
 export const app = new Hono<Env>();
 
@@ -42,11 +44,30 @@ app.post(
       temperature: z.coerce.number().optional(),
       system: z.string().optional(),
       message: z.string(),
+      chatSessionId: z.string().optional(),
     }),
   ),
   async (c) => {
-    const { model, maxTokens, temperature, system, message } =
+    const { model, maxTokens, temperature, system, message, chatSessionId } =
       c.req.valid("json");
+
+    // Get or create chat session
+    let chatSession;
+    if (chatSessionId) {
+      chatSession = await ChatSession.findById(chatSessionId);
+      if (!chatSession) {
+        return c.json(
+          {
+            message: "Chat session not found",
+          },
+          404,
+        );
+      }
+    } else {
+      chatSession = new ChatSession();
+    }
+
+    const messages = chatSession.messages;
 
     const chosenModel: ModelName = isSupportedModel(model)
       ? model
@@ -140,9 +161,24 @@ app.post(
       message,
     });
 
+    const usedTools = messages
+      .flatMap((msg) => {
+        if (Array.isArray(msg.content)) {
+          return msg.content.map((c) => {
+            if (c.type === "tool-call") {
+              return c.toolName;
+            }
+            return "";
+          });
+        }
+        return "";
+      })
+      .filter((tool) => tool.length > 0);
+
     const systemPrompt =
       system ??
-      "You are a very helpful assistant that is focused on helping solve hard problems.";
+      "You are a very helpful assistant that is focused on helping solve hard problems. Return your responses in markdown format.";
+
     const maxSteps = 15;
 
     const start = performance.now();
@@ -159,7 +195,9 @@ app.post(
       maxTokens: maxTokens ?? 8192,
       tools: allTools,
       // biome-ignore lint/style/useNamingConvention: <explanation>
-      experimental_activeTools: activeTools,
+      experimental_activeTools: [
+        ...new Set(activeTools.concat(usedTools as any[])),
+      ],
       system: systemPrompt,
       messages,
       maxSteps,
@@ -184,7 +222,9 @@ app.post(
     const interaction = new Interaction(i);
     await interaction.save();
 
-    messages.push(...response.messages);
+    chatSession.messages.push(...response.messages);
+    chatSession.markModified("messages");
+    await chatSession.save();
 
     console.info(`Active tools: ${activeTools.join(", ")}`);
     console.info(`Tools called: ${toolCalls.length}`);
@@ -195,12 +235,13 @@ app.post(
     const metadata = parseMetadata(experimental_providerMetadata);
 
     const thinkingBlock = `<think>\n${reasoning}\n</think>\n\n`;
-    const result = `${message}\n\n${reasoning ? thinkingBlock : ""}${text}`;
+    const result = `${reasoning ? thinkingBlock : ""}${text}`;
 
     return c.json(
       {
         content: result.trim(),
         sources: metadata.sources,
+        chatSessionId: chatSession._id,
       },
       200,
     );

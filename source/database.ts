@@ -58,3 +58,21 @@ const promptSchema = new Schema<PromptInterface>(
 );
 
 export const Prompt = model<PromptInterface>("Prompts", promptSchema);
+
+export interface ChatSessionInterface {
+  messages: CoreMessage[];
+}
+
+const chatSessionSchema = new Schema<ChatSessionInterface>(
+  {
+    messages: { type: Schema.Types.Mixed, required: true, default: [] },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+export const ChatSession = model<ChatSessionInterface>(
+  "ChatSessions",
+  chatSessionSchema,
+);

@@ -78,6 +78,7 @@
 
     const messages = [];
     let isLoading = false;
+    let currentChatSessionId = undefined;
 
     // Fetch config from server
     async function fetchConfig() {
@@ -190,10 +191,14 @@
             model: document.getElementById("model").value,
             maxTokens: Number(document.getElementById("maxTokens").value),
             temperature: Number(document.getElementById("temperature").value),
+            chatSessionId: currentChatSessionId,
           }),
         });
 
         const data = await response.json();
+
+        // Store the chat session ID
+        currentChatSessionId = data.chatSessionId;
 
         // Add assistant message
         messages.push({
