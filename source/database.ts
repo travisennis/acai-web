@@ -59,6 +59,23 @@ const promptSchema = new Schema<PromptInterface>(
 
 export const Prompt = model<PromptInterface>("Prompts", promptSchema);
 
+export interface PageInterface {
+  name: string;
+  content: string;
+}
+
+const pageSchema = new Schema<PageInterface>(
+  {
+    name: { type: String, required: true },
+    content: { type: String, required: true },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+export const Page = model<PageInterface>("Pages", pageSchema);
+
 export interface ChatSessionInterface {
   messages: CoreMessage[];
 }
