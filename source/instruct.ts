@@ -6,7 +6,7 @@ import {
   languageModel,
   wrapLanguageModel,
 } from "@travisennis/acai-core";
-import { auditMessage, log } from "@travisennis/acai-core/middleware";
+import { auditMessage } from "@travisennis/acai-core/middleware";
 import {
   createBrainstormingTools,
   createCodeInterpreterTool,
@@ -19,20 +19,26 @@ import {
   createUrlTools,
   createWebSearchTools,
 } from "@travisennis/acai-core/tools";
+import { zip } from "@travisennis/itertools";
 import envPaths from "@travisennis/stdlib/env";
+import { objectKeys } from "@travisennis/stdlib/object";
 import { type CoreMessage, type UserContent, generateText } from "ai";
 import { Hono } from "hono";
+import { match } from "ts-pattern";
 import { z } from "zod";
-import { chooseActiveTools } from "./chooseActiveTools.ts";
+// import { chooseActiveTools } from "./chooseActiveTools.ts";
 import { processPrompt } from "./commands.ts";
 import { Interaction, type InteractionInterface } from "./database.ts";
 import { parseMetadata } from "./parseMetadata.ts";
+
+const modes = ["normal", "research", "code", "brainstorm"] as const;
+type Mode = (typeof modes)[number];
 
 export const app = new Hono()
   .get("/", (c) => {
     return c.json(
       {
-        modes: [],
+        modes: modes,
       },
       200,
     );
@@ -51,12 +57,17 @@ export const app = new Hono()
       }),
     ),
     async (c) => {
-      const { model, maxTokens, temperature, system, message } =
+      const { model, maxTokens, temperature, system, message, mode } =
         c.req.valid("json");
 
       const chosenModel: ModelName = isSupportedModel(model)
         ? model
         : "anthropic:sonnet";
+
+      const chosenMode: Mode =
+        mode && modes.includes(mode as (typeof modes)[number])
+          ? (mode as (typeof modes)[number])
+          : "normal";
 
       const dataDir = envPaths("acai").data;
       const memoryFilePath = path.join(dataDir, "memory.json");
@@ -119,7 +130,8 @@ export const app = new Hono()
 
       const langModel = wrapLanguageModel(
         languageModel(chosenModel),
-        log,
+        // usage,
+        // log,
         auditMessage({ path: messagesFilePath }),
       );
 
@@ -150,7 +162,12 @@ export const app = new Hono()
       const brainstormingTools = createBrainstormingTools(langModel);
 
       const webSearchTools = createWebSearchTools({
-        auditPath: messagesFilePath,
+        model: wrapLanguageModel(
+          languageModel("google:flash2-search"),
+          // log,
+          // usage,
+          auditMessage({ path: messagesFilePath }),
+        ),
       });
 
       const allTools = {
@@ -166,10 +183,28 @@ export const app = new Hono()
         ...webSearchTools,
       } as const;
 
-      const activeTools = await chooseActiveTools({
-        tools: allTools,
-        message: finalMessage,
-      });
+      // const activeTools = await chooseActiveTools({
+      //   tools: allTools,
+      //   message: finalMessage,
+      // });
+
+      const activeTools: (keyof typeof allTools)[] = match(chosenMode)
+        .with("normal", () => [])
+        .with("research", () => [
+          ...objectKeys(codeInterpreterTool),
+          ...objectKeys(thinkingTools),
+          ...objectKeys(raindropTools),
+          ...objectKeys(urlTools),
+          ...objectKeys(webSearchTools),
+        ])
+        .with("code", () => [
+          ...objectKeys(codeTools),
+          ...objectKeys(codeInterpreterTool),
+          ...objectKeys(fsTools),
+          ...objectKeys(gitTools),
+        ])
+        .with("brainstorm", () => [...objectKeys(brainstormingTools)])
+        .exhaustive();
 
       const systemPrompt =
         system ??
@@ -183,8 +218,7 @@ export const app = new Hono()
         text,
         reasoning,
         response,
-        toolCalls,
-        toolResults,
+        steps,
         experimental_providerMetadata,
         usage,
       } = await generateText({
@@ -199,14 +233,9 @@ export const app = new Hono()
         maxSteps,
       });
 
-      console.dir(toolCalls);
-      console.dir(toolResults);
-
-      console.info(`Active tools: ${activeTools.join(", ")}`);
-      console.info(`Tools called: ${toolCalls.length}`);
-      console.info(
-        `Tools: ${toolCalls.map((toolCall) => toolCall.toolName).join(", ")}`,
-      );
+      console.info(`Steps: ${steps.length}`);
+      const toolCalls = steps.flatMap((step) => step.toolCalls);
+      const toolResults = steps.flatMap((step) => step.toolResults);
 
       const i: Omit<InteractionInterface, "timestamp"> = {
         model: response.modelId,
@@ -230,9 +259,18 @@ export const app = new Hono()
       // access the grounding metadata. Casting to the provider metadata type
       // is optional but provides autocomplete and type safety.
       const metadata = parseMetadata(experimental_providerMetadata);
+      console.dir(experimental_providerMetadata);
 
+      const t = zip(toolCalls, toolResults);
+      const toolOutput = t
+        .map(
+          (r) =>
+            `${r[0].toolName}:\nArgs: ${JSON.stringify(r[0].args)}\nResult: ${r[1].result}`,
+        )
+        .toArray()
+        .join("\n\n");
       const thinkingBlock = `<think>\n${reasoning}\n</think>\n\n`;
-      const result = `${message}\n\n${reasoning ? thinkingBlock : ""}${text}`;
+      const result = `${message}\n\n${reasoning ? thinkingBlock : ""}${toolOutput}\n===\n\n${text}`;
 
       return c.json(
         {
