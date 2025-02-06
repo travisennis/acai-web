@@ -65,6 +65,11 @@
                   <input type="number" id="temperature" name="temperature" step="0.1" min="0" max="2" value="0.3"
                     class="settings-input">
                 </div>
+
+                <div class="settings-group">
+                  <label for="mode" class="settings-label">Mode</label>
+                  <select id="mode" name="mode" class="settings-input"></select>
+                </div>
               </div>
             </div>
           </div>
@@ -81,7 +86,7 @@
     let currentChatSessionId = undefined;
 
     // Fetch config from server
-    async function fetchConfig() {
+    async function fetchGlobalConfig() {
       try {
         const response = await fetch('/config');
         const config = await response.json();
@@ -92,11 +97,24 @@
       }
     }
 
+    async function fetchConfig() {
+      try {
+        const response = await fetch('/instruct');
+        const config = await response.json();
+        return config;
+      } catch (error) {
+        console.error('Error fetching endpoint config:', error);
+        return {};
+      }
+    }
+
     // Initialize select options
     async function initializeSelects() {
+      const globalConfig = await fetchGlobalConfig();
       const config = await fetchConfig();
       const modelDatalist = document.getElementById('models');
       const modelInput = document.getElementById('model');
+      const modeSelect = document.getElementById('mode');
 
       // Add click handler to select all text in model input
       modelInput.addEventListener('click', function () {
@@ -104,10 +122,18 @@
       });
 
       // Populate model options
-      config.models.forEach(model => {
+      globalConfig.models.forEach(model => {
         const option = document.createElement('option');
         option.value = model;
         modelDatalist.appendChild(option);
+      });
+
+      config.modes.forEach(mode => {
+        const option = document.createElement('option');
+        option.value = mode;
+        option.textContent = mode;
+        if (model === 'normal') option.selected = true;
+        modeSelect.appendChild(option);
       });
     }
 
@@ -122,7 +148,22 @@
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.innerHTML = marked.parse(message.content);
+        const content = message.content;
+        if (Array.isArray(content)) {
+          content.forEach((c) => {
+            if (c.type == "text") {
+              contentDiv.innerHTML = marked.parse(c.text);
+            } else if (c.type === "tool-call") {
+                contentDiv.innerHTML = marked.parse(typeof c.args === 'string' ?
+                  c.args : JSON.stringify(c.args));
+            } else if (c.type === "tool-result") {
+                contentDiv.innerHTML = marked.parse(typeof c.args === 'string' ?
+                  c.args : JSON.stringify(c.result));
+            }
+          });
+        } else {
+          contentDiv.innerHTML = marked.parse(message.content);
+        }
 
         messageDiv.appendChild(contentDiv);
         container.appendChild(messageDiv);
@@ -192,6 +233,7 @@
             maxTokens: Number(document.getElementById("maxTokens").value),
             temperature: Number(document.getElementById("temperature").value),
             chatSessionId: currentChatSessionId,
+            mode: document.getElementById("mode").value,
           }),
         });
 
@@ -201,10 +243,7 @@
         currentChatSessionId = data.chatSessionId;
 
         // Add assistant message
-        messages.push({
-          role: 'assistant',
-          content: data.content
-        });
+        messages.push(...data.messages);
 
         renderMessages();
       } catch (error) {

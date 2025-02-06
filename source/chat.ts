@@ -20,20 +20,85 @@ import {
   createWebSearchTools,
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
-import { type CoreMessage, generateText } from "ai";
-import { type Env, Hono } from "hono";
+import { objectKeys } from "@travisennis/stdlib/object";
+import { asyncTry } from "@travisennis/stdlib/try";
+import { generateText } from "ai";
+import { Hono } from "hono";
+import type { Document } from "mongoose";
+import { match } from "ts-pattern";
 import { z } from "zod";
-import { chooseActiveTools } from "./chooseActiveTools.ts";
+// import { chooseActiveTools } from "./chooseActiveTools.ts";
 import { processPrompt } from "./commands.ts";
 import {
+  ChatSession,
+  type ChatSessionInterface,
   Interaction,
   type InteractionInterface,
-  ChatSession,
 } from "./database.ts";
 import { parseMetadata } from "./parseMetadata.ts";
 
-export const app = new Hono<Env>();
+function generateSystemPrompt(date: Date) {
+  return `You are a helpful, respectful, and honest assistant. Today's date is ${date}. When responding to queries keep in mind the following:
 
+
+## Core Principles & Ethics
+- Maintain helpfulness, respect, and honesty in all interactions
+- Prioritize user safety and wellbeing
+- Respect intellectual property and personal information
+- Avoid harmful, unethical, or illegal content
+- Maintain appropriate professional boundaries
+
+## Interaction Guidelines
+- Adopt a professional yet friendly demeanor
+- Adapt communication style to user expertise level
+- Ask clarifying questions when needed
+- Admit uncertainty when appropriate
+- Stay focused on the user's query
+
+## Response Requirements
+- Provide accurate, factual information
+- Break down complex topics into understandable parts
+- Include relevant examples and practical applications
+- Consider multiple perspectives and approaches
+- Support assertions with reasoning or evidence
+- Address all parts of multi-part questions
+
+## Content Structure & Format
+- Begin complex responses with a brief overview
+- Use hierarchical headers for organization
+- Implement clear sections for distinct concepts
+- Utilize bullet points and numbered lists
+- Apply markdown formatting for readability
+- Include tables and code blocks when relevant
+- End complex responses with key takeaways
+
+## Quality Standards
+- Ensure comprehensive coverage of main concepts
+- Provide appropriate level of detail based on context
+- Include practical implementation details
+- Add cautionary notes where appropriate
+- Verify response completeness
+- Maintain consistent formatting
+
+## Limitations & Boundaries
+- Acknowledge AI limitations transparently
+- Defer to human experts on critical matters
+- Avoid making promises or guarantees
+- Direct to additional resources when appropriate
+- Maintain clear scope boundaries`;
+}
+
+const modes = ["normal", "research", "code", "brainstorm"] as const;
+type Mode = (typeof modes)[number];
+
+export const app = new Hono().get("/", (c) => {
+  return c.json(
+    {
+      modes: modes,
+    },
+    200,
+  );
+});
 app.post(
   "/",
   zValidator(
@@ -45,11 +110,19 @@ app.post(
       system: z.string().optional(),
       message: z.string(),
       chatSessionId: z.string().optional(),
+      mode: z.string().optional(),
     }),
   ),
   async (c) => {
-    const { model, maxTokens, temperature, system, message, chatSessionId } =
-      c.req.valid("json");
+    const {
+      model,
+      maxTokens,
+      temperature,
+      system,
+      message,
+      chatSessionId,
+      mode,
+    } = c.req.valid("json");
 
     // Get or create chat session
     let chatSession;
@@ -72,6 +145,11 @@ app.post(
     const chosenModel: ModelName = isSupportedModel(model)
       ? model
       : "anthropic:sonnet";
+
+    const chosenMode: Mode =
+      mode && modes.includes(mode as (typeof modes)[number])
+        ? (mode as (typeof modes)[number])
+        : "normal";
 
     const dataDir = envPaths("acai").data;
     const memoryFilePath = path.join(dataDir, "memory.json");
@@ -109,7 +187,8 @@ app.post(
 
     const langModel = wrapLanguageModel(
       languageModel(chosenModel),
-      log,
+      // usage,
+      // log,
       auditMessage({ path: messagesFilePath }),
     );
 
@@ -140,7 +219,12 @@ app.post(
     const brainstormingTools = createBrainstormingTools(langModel);
 
     const webSearchTools = createWebSearchTools({
-      auditPath: messagesFilePath,
+      model: wrapLanguageModel(
+        languageModel("google:flash2-search"),
+        // log,
+        // usage,
+        auditMessage({ path: messagesFilePath }),
+      ),
     });
 
     const allTools = {
@@ -156,10 +240,29 @@ app.post(
       ...webSearchTools,
     } as const;
 
-    const activeTools = await chooseActiveTools({
-      tools: allTools,
-      message,
-    });
+    // const activeTools = await chooseActiveTools({
+    //   tools: allTools,
+    //   message,
+    // });
+
+    const activeTools: (keyof typeof allTools)[] = match(chosenMode)
+      .with("normal", () => [])
+      .with("research", () => [
+        ...objectKeys(raindropTools),
+        ...objectKeys(urlTools),
+        ...objectKeys(webSearchTools),
+      ])
+      .with("code", () => [
+        ...objectKeys(codeTools),
+        ...objectKeys(codeInterpreterTool),
+        ...objectKeys(fsTools),
+        ...objectKeys(gitTools),
+      ])
+      .with("brainstorm", () => [
+        ...objectKeys(brainstormingTools),
+        ...objectKeys(thinkingTools),
+      ])
+      .exhaustive();
 
     const usedTools = messages
       .flatMap((msg) => {
@@ -175,33 +278,25 @@ app.post(
       })
       .filter((tool) => tool.length > 0);
 
-    const systemPrompt =
-      system ??
-      "You are a very helpful assistant that is focused on helping solve hard problems. Return your responses in markdown format.";
+    const systemPrompt = system ?? generateSystemPrompt(new Date());
 
     const maxSteps = 15;
 
     const start = performance.now();
-    const {
-      text,
-      response,
-      reasoning,
-      toolCalls,
-      usage,
-      experimental_providerMetadata,
-    } = await generateText({
-      model: langModel,
-      temperature: temperature ?? 0.3,
-      maxTokens: maxTokens ?? 8192,
-      tools: allTools,
-      // biome-ignore lint/style/useNamingConvention: <explanation>
-      experimental_activeTools: [
-        ...new Set(activeTools.concat(usedTools as any[])),
-      ],
-      system: systemPrompt,
-      messages,
-      maxSteps,
-    });
+    const { response, reasoning, usage, experimental_providerMetadata } =
+      await generateText({
+        model: langModel,
+        temperature: temperature ?? 0.3,
+        maxTokens: maxTokens ?? 8192,
+        tools: allTools,
+        // biome-ignore lint/style/useNamingConvention: <explanation>
+        experimental_activeTools: [
+          ...new Set(activeTools.concat(usedTools as any[])),
+        ],
+        system: systemPrompt,
+        messages,
+        maxSteps,
+      });
 
     const i: Omit<InteractionInterface, "timestamp"> = {
       model: response.modelId,
@@ -226,20 +321,12 @@ app.post(
     chatSession.markModified("messages");
     await chatSession.save();
 
-    console.info(`Active tools: ${activeTools.join(", ")}`);
-    console.info(`Tools called: ${toolCalls.length}`);
-    console.info(
-      `Tools: ${toolCalls.map((toolCall) => toolCall.toolName).join(", ")}`,
-    );
-
     const metadata = parseMetadata(experimental_providerMetadata);
-
-    const thinkingBlock = `<think>\n${reasoning}\n</think>\n\n`;
-    const result = `${reasoning ? thinkingBlock : ""}${text}`;
 
     return c.json(
       {
-        content: result.trim(),
+        messages: response.messages,
+        reasoning: reasoning,
         sources: metadata.sources,
         chatSessionId: chatSession._id,
       },
