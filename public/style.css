@@ -88,7 +88,7 @@
 }
 
 body {
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: Helvetica, Arial, sans-serif;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -438,6 +438,13 @@ select:focus {
   border: 1px solid var(--border);
   color: var(--text-primary);
   max-width: 85%;
+}
+
+.message.tool .message-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  max-width: 55%;
 }
 
 .chat-input-container {
@@ -856,4 +863,127 @@ select:focus {
 .file-actions {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.25em;
+}
+
+h2 {
+  font-size: 1.85em;
+}
+
+h3 {
+  font-size: 1.55em;
+}
+
+h4 {
+  font-size: 1.25em;
+}
+
+h5 {
+  font-size: 1em;
+}
+
+h6 {
+  font-size: 0.875em;
+}
+
+/* Paragraphs and lists */
+p,
+ul,
+ol {
+  margin-bottom: 1.5em;
+}
+
+/* Lists */
+ul,
+ol {
+  padding-left: 2em;
+}
+
+li {
+  margin-bottom: 0.5em;
+}
+
+/* Links */
+a {
+  color: #0066cc;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s;
+}
+
+a:hover {
+  border-bottom-color: #0066cc;
+}
+
+/* Blockquotes */
+blockquote {
+  margin: 1.5em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid #e0e0e0;
+  font-style: italic;
+}
+
+/* Code blocks */
+pre,
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  border-radius: 3px;
+}
+
+code {
+  padding: 0.2em 0.4em;
+  font-size: 0.9em;
+}
+
+pre {
+  padding: 1em;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+pre code {
+  padding: 0;
+}
+
+/* Horizontal rule */
+hr {
+  border: 0;
+  border-top: 1px solid #e0e0e0;
+  margin: 2em 0;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5em 0;
+}
+
+th,
+td {
+  padding: 0.5em;
+  text-align: left;
+}
+
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  margin: 1em 0;
 }
