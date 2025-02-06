@@ -40,13 +40,18 @@ export const Interaction = model<InteractionInterface>(
   interactionSchema,
 );
 
+interface Timestamps {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface PromptInterface {
   name: string;
   content: string;
   role: "system" | "user";
 }
 
-const promptSchema = new Schema<PromptInterface>(
+const promptSchema = new Schema<PromptInterface & Timestamps>(
   {
     name: { type: String, required: true },
     content: { type: String, required: true },
@@ -57,14 +62,17 @@ const promptSchema = new Schema<PromptInterface>(
   },
 );
 
-export const Prompt = model<PromptInterface>("Prompts", promptSchema);
+export const Prompt = model<PromptInterface & Timestamps>(
+  "Prompts",
+  promptSchema,
+);
 
 export interface PageInterface {
   name: string;
   content: string;
 }
 
-const pageSchema = new Schema<PageInterface>(
+const pageSchema = new Schema<PageInterface & Timestamps>(
   {
     name: { type: String, required: true },
     content: { type: String, required: true },
@@ -74,13 +82,13 @@ const pageSchema = new Schema<PageInterface>(
   },
 );
 
-export const Page = model<PageInterface>("Pages", pageSchema);
+export const Page = model<PageInterface & Timestamps>("Pages", pageSchema);
 
 export interface ChatSessionInterface {
   messages: CoreMessage[];
 }
 
-const chatSessionSchema = new Schema<ChatSessionInterface>(
+const chatSessionSchema = new Schema<ChatSessionInterface & Timestamps>(
   {
     messages: { type: Schema.Types.Mixed, required: true, default: [] },
   },
@@ -89,7 +97,7 @@ const chatSessionSchema = new Schema<ChatSessionInterface>(
   },
 );
 
-export const ChatSession = model<ChatSessionInterface>(
+export const ChatSession = model<ChatSessionInterface & Timestamps>(
   "ChatSessions",
   chatSessionSchema,
 );
