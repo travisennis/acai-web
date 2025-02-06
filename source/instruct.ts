@@ -234,6 +234,7 @@ export const app = new Hono()
       });
 
       console.info(`Steps: ${steps.length}`);
+      const textSteps = steps.map((step) => step.text);
       const toolCalls = steps.flatMap((step) => step.toolCalls);
       const toolResults = steps.flatMap((step) => step.toolResults);
 
@@ -264,8 +265,8 @@ export const app = new Hono()
       const t = zip(toolCalls, toolResults);
       const toolOutput = t
         .map(
-          (r) =>
-            `${r[0].toolName}:\nArgs: ${JSON.stringify(r[0].args)}\nResult: ${r[1].result}`,
+          (r, i) =>
+            `Step ${i}:\n${textSteps[i]}\n\nToolname: ${r[0].toolName}:\nArgs: ${JSON.stringify(r[0].args)}\nResult:\n${r[1].result}`,
         )
         .toArray()
         .join("\n\n");
