@@ -155,6 +155,8 @@
       document.getElementById('fileModal').style.display = 'none';
     }
 
+    window.closeModal = closeModal;
+
     async function handleFileSubmit(event) {
       event.preventDefault();
       const fileId = document.getElementById('fileId').value;
