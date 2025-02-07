@@ -18,15 +18,6 @@ const updatePromptSchema = z.object({
   role: z.enum(["system", "user"]).optional(),
 });
 
-// Helper functions
-async function getAllPrompts() {
-  return await Prompt.find().sort({ createdAt: -1 });
-}
-
-async function getPrompt(id: string) {
-  return await Prompt.findById(id);
-}
-
 // Routes
 app
   .post("/", zValidator("json", promptSchema), async (c) => {
@@ -49,7 +40,7 @@ app
   })
   .get("/", async (c) => {
     try {
-      const prompts = await getAllPrompts();
+      const prompts = await Prompt.find().sort({ createdAt: -1 });
       return c.json(prompts);
     } catch (error) {
       return c.json(
@@ -61,7 +52,7 @@ app
   .get("/:id", async (c) => {
     try {
       const id = c.req.param("id");
-      const prompt = await getPrompt(id);
+      const prompt = await Prompt.findById(id);
 
       if (!prompt) {
         return c.json({ error: "Prompt not found" }, 404);
