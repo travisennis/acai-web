@@ -39,9 +39,9 @@
   /* 8px */
   --spacing-md: 0.75rem;
   /* 12px */
-  --spacing-lg: 1rem;
+  --spacing-lg: 0.85rem;
   /* 16px */
-  --spacing-xl: 1.25rem;
+  --spacing-xl: 1rem;
   /* 20px */
 
   /* Border radius */
@@ -774,20 +774,20 @@ select:focus {
   align-items: center;
   margin-bottom: var(--spacing-sm);
   padding: var(--spacing-lg) var(--spacing-xl);
-  background: var(--background-tertiary);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   border: 1px solid var(--border);
-  border-bottom: none;
+}
+
+.file-detail-header h2 {
+  margin-top: 0.7em;
 }
 
 .file-metadata {
   font-size: 0.9em;
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-xl);
-  padding: 0 var(--spacing-xl);
-  background: var(--background-tertiary);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--spacing-md);
+  padding: 1em;
+  background: var(--surface);
 }
 
 .file-content-view {
@@ -795,7 +795,7 @@ select:focus {
   line-height: 1.6;
   font-size: 1rem;
   color: var(--text-primary);
-  padding: 0 var(--spacing-xl);
+  padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
   white-space: pre-wrap;
 }
