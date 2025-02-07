@@ -8,9 +8,12 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="/public/style.css">
+  <meta name="description" content="Prompt management interface for viewing and editing prompts">
+  <meta name="theme-color" content="#2563eb">
 </head>
 
 <body>
+  <a href="#main-content" class="skip-to-main">Skip to main content</a>
   <nav class="main-nav">
     <div class="nav-container">
       <div class="nav-links">
@@ -25,26 +28,28 @@
     </div>
   </nav>
 
-  <main class="main-content">
+  <main id="main-content" class="main-content" role="main">
     <div class="content-container">
       <div class="files-container">
         <!-- Main Split View -->
         <div class="split-view">
           <!-- Left Panel - File List -->
           <div class="left-panel">
-            <div class="panel-header">
+            <header class="panel-header" role="banner">
               <h2>Prompts</h2>
-              <button id="newFileBtn" class="action-button button">➕ New Prompt</button>
-            </div>
-            <div id="filesList" class="files-list">
+              <button id="newFileBtn" class="action-button button" aria-label="Create new prompt">
+                <span aria-hidden="true">➕</span> New Prompt
+              </button>
+            </header>
+            <div id="filesList" class="files-list" role="list" aria-label="Prompts list">
               <!-- Files will be listed here -->
             </div>
           </div>
 
           <!-- Right Panel - File Details and Content -->
           <div class="right-panel">
-            <div id="fileDetails" class="file-details">
-              <div class="no-selection-message">Select a file to view its details</div>
+            <div id="fileDetails" class="file-details" role="region" aria-label="Prompt details">
+              <div class="no-selection-message" role="status">Select a prompt to view its details</div>
             </div>
           </div>
         </div>

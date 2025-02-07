@@ -88,7 +88,7 @@
 }
 
 body {
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', Helvetica, Arial, sans-serif;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -334,8 +334,30 @@ body {
   color: var(--primary);
 }
 
-/* Responsive Design */
+/* Improved Responsive Design */
+@media (max-width: 1024px) {
+  .files-container {
+    padding: var(--spacing-md);
+  }
+}
+
 @media (max-width: 768px) {
+  .split-view {
+    flex-direction: column;
+  }
+
+  .left-panel {
+    width: 100%;
+    max-width: none;
+    resize: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .right-panel {
+    padding: var(--spacing-md);
+  }
+
   .input-section {
     flex-direction: column;
   }
@@ -347,6 +369,49 @@ body {
   .content-container {
     height: calc(100vh - 4rem);
   }
+}
+
+/* Focus styles for better accessibility */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Skip to main content link for keyboard users */
+.skip-to-main {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  padding: 1rem;
+  background: var(--primary);
+  color: white;
+  z-index: var(--z-modal);
+  transition: top 0.3s;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+  position: relative;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: -0.75rem;
+  border: 2px solid var(--primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 /* Theme transition */
@@ -617,11 +682,17 @@ select:focus {
 
 .files-container {
   height: calc(100vh - 60px);
+  max-width: 1600px;
+  margin: 0 auto;
   padding: var(--spacing-xl);
 }
 
 .split-view {
   display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   gap: var(--spacing-xl);
   height: 100%;
   background: var(--background-secondary);
@@ -630,7 +701,11 @@ select:focus {
 }
 
 .left-panel {
-  width: 300px;
+  width: 320px;
+  min-width: 280px;
+  max-width: 400px;
+  resize: horizontal;
+  overflow: auto;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -660,7 +735,9 @@ select:focus {
 }
 
 .file-list-item {
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  margin: 0 var(--spacing-sm);
+  border-radius: var(--radius-md);
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background-color var(--transition-fast);
@@ -676,7 +753,9 @@ select:focus {
 }
 
 .file-list-name {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -687,6 +766,10 @@ select:focus {
 
 .file-detail-header {
   display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-sm);
@@ -708,7 +791,10 @@ select:focus {
 }
 
 .file-content-view {
-  background: var(--background-tertiary);
+  background: var(--surface);
+  line-height: 1.6;
+  font-size: 1rem;
+  color: var(--text-primary);
   padding: 0 var(--spacing-xl);
   border-radius: var(--radius-lg);
   white-space: pre-wrap;
@@ -735,6 +821,8 @@ select:focus {
 
 .modal-content {
   position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
   background-color: var(--background-primary);
   margin: var(--spacing-xl) auto;
   padding: var(--spacing-xl);
@@ -863,6 +951,40 @@ select:focus {
 .file-actions {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+/* Better keyboard navigation indicators */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* Improved error states */
+.error {
+  border-color: var(--error) !important;
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+.error-message {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Success feedback */
+.success {
+  border-color: var(--success) !important;
+  background-color: rgba(16, 185, 129, 0.05) !important;
+}
+
+.success-message {
+  color: var(--success);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 /* Headings */
