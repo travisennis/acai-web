@@ -184,7 +184,7 @@
       try {
         const timeout = 120;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120 * 1000);
+        const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
 
         const response = await fetch('/instruct', {
           signal: controller.signal,
