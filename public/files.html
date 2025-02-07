@@ -100,8 +100,8 @@
 
       currentFiles.forEach(file => {
         const fileElement = document.createElement('div');
-        fileElement.className = `file-list-item ${file._id === selectedFileId ? 'selected' : ''}`;
-        fileElement.onclick = () => selectFile(file._id);
+        fileElement.className = `file-list-item ${file.id === selectedFileId ? 'selected' : ''}`;
+        fileElement.onclick = () => selectFile(file.id);
         fileElement.innerHTML = `
           <div class="file-list-name">${file.name}</div>
           <div class="file-list-date">${new Date(file.updatedAt).toLocaleDateString()}</div>
@@ -120,8 +120,8 @@
         <div class="file-detail-header">
           <h2>${file.name}</h2>
           <div class="file-actions">
-            <button onclick="editFile('${file._id}')" class="action-button button">Edit</button>
-            <button onclick="deleteFile('${file._id}')" class="action-button delete button">Delete</button>
+            <button onclick="editFile('${file.id}')" class="action-button button">Edit</button>
+            <button onclick="deleteFile('${file.id}')" class="action-button delete button">Delete</button>
           </div>
         </div>
         <div class="file-metadata">
@@ -190,7 +190,7 @@
     }
 
     function editFile(id) {
-      const file = currentFiles.find(f => f._id === id);
+      const file = currentFiles.find(f => f.id === id);
       if (!file) return;
 
       document.getElementById('fileId').value = id;
