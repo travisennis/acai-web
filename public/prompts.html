@@ -129,7 +129,7 @@
           <div>Created: ${new Date(file.createdAt).toLocaleString()}</div>
           <div>Updated: ${new Date(file.updatedAt).toLocaleString()}</div>
         </div>
-        <div class="file-content-view">${marked.parse(file.content)}</div>
+        <div class="file-content-view">${file.content}</div>
       `;
     }
 
