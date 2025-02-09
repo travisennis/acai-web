@@ -27,6 +27,7 @@
     "@travisennis/itertools": "^0.0.1",
     "@travisennis/stdlib": "^0.0.2",
     "ai": "^4.1.24",
+    "globby": "^14.1.0",
     "hono": "^4.6.20",
     "mongoose": "^8.10.0",
     "redis": "^4.7.0",

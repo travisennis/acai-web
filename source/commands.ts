@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { directoryTree, loadUrl } from "@travisennis/acai-core/tools";
+import { globby } from "globby";
 
 interface CommandContext {
   baseDir: string;
@@ -80,9 +81,17 @@ async function processFileCommand(context: CommandContext) {
 }
 
 async function processFilesCommand(context: CommandContext) {
-  const { baseDir, line, processedLines } = context;
-  const filePaths = line.replace("@files", "");
-  for (const filePath of filePaths.split(" ")) {
+  const { baseDir, line, processedLines, projectDir } = context;
+  const patterns = line
+    .replace("@files", "")
+    .trimStart()
+    .split(" ")
+    .map((p) => p.trim());
+  const filePaths = await globby(patterns, {
+    gitignore: true,
+    cwd: projectDir ?? baseDir,
+  });
+  for (const filePath of filePaths) {
     if (!filePath.trim()) {
       continue;
     }
@@ -179,8 +188,8 @@ const commandHandlers: Record<
 > = {
   "@list-prompts": processListPrompts,
   "@prompt": processPromptCommand,
-  "@file": processFileCommand,
   "@files": processFilesCommand,
+  "@file": processFileCommand,
   "@dir": processDirCommand,
   "@url": processUrlCommand,
 };
