@@ -99,7 +99,7 @@
 
     async function fetchConfig() {
       try {
-        const response = await fetch('/instruct');
+        const response = await fetch('/chat');
         const config = await response.json();
         return config;
       } catch (error) {
