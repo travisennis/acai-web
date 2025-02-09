@@ -41,6 +41,11 @@
               </div>
             </div>
 
+            <div class="response-container">
+              <textarea id="response-area" class="response-textarea" readonly
+                placeholder="Response will appear here..."></textarea>
+            </div>
+
             <div class="settings-panel">
               <div class="settings-container">
                 <div class="settings-group">
@@ -78,6 +83,7 @@
     // JavaScript remains the same as in your original code
     const form = document.getElementById('chatForm');
     const messageTextarea = document.getElementById('instruct-message');
+    const responseTextarea = document.getElementById('response-area');
     const submitButton = document.getElementById('submitButton');
     const errorDiv = document.getElementById('error');
 
@@ -198,8 +204,6 @@
 
         const { requestId } = await response.json();
 
-        messageTextarea.value += "\n\n===\n\n";
-
         // Second request: GET with the stream ID
         const eventSource = new EventSource(`/instruct?requestId=${requestId}`);
 
@@ -213,7 +217,8 @@
         };
 
         eventSource.onmessage = (event) => {
-          messageTextarea.value += event.data;
+          //responseTextarea.value += event.data;
+          appendText(responseTextarea, event.data);
         };
 
         eventSource.addEventListener("close", (e) => {
@@ -239,6 +244,24 @@
         e.preventDefault();
         form.requestSubmit();
       }
+    }
+
+    function appendText(textarea, textToAppend) {
+        //const textarea = document.getElementById(textareaId);
+        //if (!textarea) {
+        //    console.error("Textarea not found");
+        //    return;
+        //}
+
+        // Check if the user was already at the bottom (or very close)
+        const wasAtBottom = textarea.scrollHeight - textarea.scrollTop <= textarea.clientHeight + 5; // +5 for a little tolerance
+
+        textarea.value += textToAppend;
+
+        // Only scroll to the bottom if the user was already there
+        if (wasAtBottom) {
+            textarea.scrollTop = textarea.scrollHeight;
+        }
     }
 
     // Initialize
