@@ -287,6 +287,24 @@ export const app = new Hono()
             //   (step) => step.toolResults,
             // );
 
+            // remove file data. need to reduce storage costs
+            const cleanedMessages = messages.map((msg) => {
+              if (msg.role === "user") {
+                const content = msg.content;
+                if (Array.isArray(content)) {
+                  msg.content = content.map((c) => {
+                    if (c.type === "file") {
+                      c.data = "...";
+                      return c;
+                    }
+                    return c;
+                  });
+                }
+                return msg;
+              }
+              return msg;
+            });
+
             const i: Omit<InteractionInterface, "timestamp"> = {
               model: result.response.modelId,
               params: {
@@ -294,7 +312,7 @@ export const app = new Hono()
                 maxTokens: maxTokens ?? 8192,
                 activeTools,
               },
-              messages: messages.concat(result.response.messages),
+              messages: cleanedMessages.concat(result.response.messages),
               usage: {
                 promptTokens: result.usage.promptTokens,
                 completionTokens: result.usage.completionTokens,
