@@ -275,7 +275,7 @@ export const app = new Hono()
             ) {
               await stream.writeSSE({
                 event: "message",
-                data: event.text,
+                data: `\nStep: ${event.text}\n`,
               });
             }
           },
