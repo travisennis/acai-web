@@ -135,7 +135,7 @@ export const app = new Hono()
 
         if (pp.returnPrompt) {
           await stream.writeSSE({
-            event: "message",
+            event: "update-prompt",
             data: pp.processedPrompt,
           });
           return;

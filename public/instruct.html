@@ -213,6 +213,7 @@
 
         eventSource.onerror = (error) => {
           console.error('SSE error:', error);
+          setLoading(false);
           eventSource.close();
         };
 
@@ -220,6 +221,12 @@
           //responseTextarea.value += event.data;
           appendText(responseTextarea, event.data);
         };
+
+        eventSource.addEventListener("update-prompt", (e) => {
+          setLoading(false);
+          messageTextarea.value = e.data;
+          eventSource.close();
+        });
 
         eventSource.addEventListener("close", (e) => {
           setLoading(false);
