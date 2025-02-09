@@ -97,7 +97,7 @@
 
     async function fetchConfig() {
       try {
-        const response = await fetch('/instruct');
+        const response = await fetch('/instruct/config');
         const config = await response.json();
         return config;
       } catch (error) {
@@ -196,8 +196,32 @@
           body: JSON.stringify(jsonBody)
         });
 
-        const data = await response.json();
-        messageTextarea.value = data.content;
+        const { requestId } = await response.json();
+
+        messageTextarea.value += "\n\n===\n\n";
+
+        // Second request: GET with the stream ID
+        const eventSource = new EventSource(`/instruct?requestId=${requestId}`);
+
+        eventSource.onopen = () => {
+          console.log('Connection established');
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('SSE error:', error);
+          eventSource.close();
+        };
+
+        eventSource.onmessage = (event) => {
+          messageTextarea.value += event.data;
+        };
+
+        eventSource.addEventListener("close", (e) => {
+          setLoading(false);
+          console.info("received close event");
+          console.dir(e);
+          eventSource.close();
+        });
       } catch (err) {
         console.error(err);
         if (err.name === 'AbortError') {
@@ -206,7 +230,7 @@
           showError('Failed to send message');
         }
       } finally {
-        setLoading(false);
+        // setLoading(false);
       }
     }
 
