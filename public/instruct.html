@@ -78,7 +78,8 @@
   </main>
 
   <script type="module">
-    // JavaScript remains the same as in your original code
+    import { getEncoding } from 'https://cdn.jsdelivr.net/npm/js-tiktoken@1.0.18/+esm';
+
     const form = document.getElementById('chatForm');
     const messageTextarea = document.getElementById('instruct-message');
     const responseTextarea = document.getElementById('response-area');
@@ -252,9 +253,60 @@
         }
     }
 
-    // Initialize
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Function to count tokens
+    function countTokens(text) {
+        const enc = getEncoding("o200k_base");
+        const tokenCount = enc.encode(text).length;
+        console.log(`Tokens: ${tokenCount}`);
+        return tokenCount;
+    }
+
+    // Main function to handle text changes
+    function setupTokenCounter() {
+        const messageTextarea = document.getElementById('instruct-message');
+        if (!messageTextarea) return;
+
+        // Store previous value to check for actual changes
+        let previousValue = messageTextarea.value;
+
+        // Create debounced version of the token counter
+        const debouncedCount = debounce((text) => {
+            if (text !== previousValue) {
+                previousValue = text;
+                countTokens(text);
+            }
+        }, 2000); // 2000ms delay
+
+        // Event listeners for both typing and pasting
+        messageTextarea.addEventListener('input', (e) => {
+            debouncedCount(e.target.value);
+        });
+
+        messageTextarea.addEventListener('paste', (e) => {
+            // Use setTimeout to get the pasted content after it's actually in the textarea
+            setTimeout(() => {
+                debouncedCount(e.target.value);
+            }, 0);
+        });
+    }
+
+    // Initialize when the DOM is ready
     document.addEventListener('DOMContentLoaded', async () => {
       await initializeSelects();
+      setupTokenCounter();
       form.addEventListener('submit', handleSubmit);
       messageTextarea.addEventListener('keydown', handleKeyDown);
     });  
