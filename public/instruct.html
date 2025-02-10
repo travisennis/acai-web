@@ -88,32 +88,21 @@
     let isLoading = false;
 
     // Fetch config from server
-    async function fetchGlobalConfig() {
+    async function fetchConfig(url) {
       try {
-        const response = await fetch('/config');
+        const response = await fetch(url);
         const config = await response.json();
         return config;
       } catch (error) {
-        console.error('Error fetching config:', error);
-        return {};
-      }
-    }
-
-    async function fetchConfig() {
-      try {
-        const response = await fetch('/instruct/config');
-        const config = await response.json();
-        return config;
-      } catch (error) {
-        console.error('Error fetching endpoint config:', error);
+        console.error(`Error fetching config from ${url}:`, error);
         return {};
       }
     }
 
     // Initialize select options
     async function initializeSelects() {
-      const globalConfig = await fetchGlobalConfig();
-      const config = await fetchConfig();
+      const globalConfig = await fetchConfig("/config");
+      const config = await fetchConfig("/instruct/config");
       const modelSelect = document.getElementById('models');
       const modelInput = document.getElementById('model');
       const modeSelect = document.getElementById('mode');
