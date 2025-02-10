@@ -240,21 +240,15 @@
       }
     }
 
-    function appendText(textarea, textToAppend) {
-        //const textarea = document.getElementById(textareaId);
-        //if (!textarea) {
-        //    console.error("Textarea not found");
-        //    return;
-        //}
-
+    function appendText(textareaElem, textToAppend) {
         // Check if the user was already at the bottom (or very close)
-        const wasAtBottom = textarea.scrollHeight - textarea.scrollTop <= textarea.clientHeight + 5; // +5 for a little tolerance
+        const wasAtBottom = textareaElem.scrollHeight - textareaElem.scrollTop <= textareaElem.clientHeight + 5; // +5 for a little tolerance
 
-        textarea.value += textToAppend;
+        textareaElem.value += textToAppend;
 
         // Only scroll to the bottom if the user was already there
         if (wasAtBottom) {
-            textarea.scrollTop = textarea.scrollHeight;
+            textareaElem.scrollTop = textareaElem.scrollHeight;
         }
     }
 
