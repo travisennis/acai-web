@@ -208,6 +208,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  font-size: 85%;
 }
 
 #systemPrompt {
