@@ -10,10 +10,8 @@ import { connect } from "mongoose";
 import { app as chatApp } from "./chat.ts";
 import { app as configApp } from "./config.ts";
 import { app as filesApp } from "./files.ts";
-import { app as generateApp } from "./generate.ts";
 import { app as historyApp } from "./history.ts";
 import { app as instructApp } from "./instruct.ts";
-import { app as modesApp } from "./modes.ts";
 import { app as promptsApp } from "./prompts.ts";
 
 const app = new Hono();
@@ -46,8 +44,6 @@ app.get(
 const routes = app
   .route("/instruct", instructApp)
   .route("/chat", chatApp)
-  .route("/modes", modesApp)
-  .route("/generate", generateApp)
   .route("/files", filesApp)
   .route("/prompts", promptsApp)
   .route("/history", historyApp)
