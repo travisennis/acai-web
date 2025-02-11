@@ -192,6 +192,8 @@
 
         const { requestId } = await response.json();
 
+        responseTextarea.value = "";
+
         // Second request: GET with the stream ID
         const eventSource = new EventSource(`/instruct?requestId=${requestId}`);
 
