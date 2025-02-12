@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { Interaction } from "./database";
+import { Interaction } from "./database.ts";
 import type { CoreMessage } from "ai";
 
 export const app = new Hono();
@@ -29,7 +29,9 @@ function getLastAssistantMessage(messages: CoreMessage[]): string {
     .filter((msg) => msg.role === "assistant")
     .reverse();
 
-  if (assistantMessages.length === 0) return "No response";
+  if (assistantMessages.length === 0) {
+    return "No response";
+  }
 
   const content = assistantMessages[0].content;
   if (typeof content === "string") {
@@ -40,7 +42,9 @@ function getLastAssistantMessage(messages: CoreMessage[]): string {
 
 function extractUserPrompt(messages: CoreMessage[]): string {
   const userMessages = messages.filter((msg) => msg.role === "user");
-  if (userMessages.length === 0) return "";
+  if (userMessages.length === 0) {
+    return "";
+  }
 
   const content = userMessages[0].content;
   if (typeof content === "string") {
@@ -67,8 +71,7 @@ app
       const interactions = await Interaction.find()
         .sort({ timestamp: -1 })
         .skip(skip)
-        .limit(pageSize)
-        .lean();
+        .limit(pageSize);
 
       const formattedInteractions = interactions.map((interaction) => {
         const preview = getLastAssistantMessage(interaction.messages);
@@ -99,7 +102,7 @@ app
     try {
       const id = c.req.param("id");
 
-      const interaction = await Interaction.findById(id).lean();
+      const interaction = await Interaction.findById(id);
 
       if (!interaction) {
         return c.json({ error: "Interaction not found" }, 404);
