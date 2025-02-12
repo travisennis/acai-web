@@ -18,7 +18,6 @@ Here are the tools available to choose from:
 
 Make sure you fully understand the user's task, before deciding on the tools. Only respond with the tools that are most useful for the user's task. Your response should be a comma-separated list of the tool names. Only return the tool name once in your list. If no tools are needed then respond with an empty array.`;
 
-
   const enhancedModel = wrapLanguageModel(
     languageModel("google:flash2"),
     extractReasoningMiddleware({ tagName: "thinking" }),
@@ -29,8 +28,6 @@ Make sure you fully understand the user's task, before deciding on the tools. On
     system,
     prompt: `Task: <task>${message}</task>: Output:`,
   });
-
-
 
   const activeTools = chosenTools
     .split(",")
