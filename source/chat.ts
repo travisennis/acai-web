@@ -20,10 +20,10 @@ import {
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
-import { asyncTry } from "@travisennis/stdlib/try";
+import { Try, asyncTry, isFailure } from "@travisennis/stdlib/try";
 import { generateText } from "ai";
 import { Hono } from "hono";
-import type { Document } from "mongoose";
+import type { HydratedDocument } from "mongoose";
 import { match } from "ts-pattern";
 import { z } from "zod";
 // import { chooseActiveTools } from "./chooseActiveTools.ts";
@@ -123,21 +123,26 @@ app.post(
       mode,
     } = c.req.valid("json");
 
-    // Get or create chat session
-    let chatSession;
-    if (chatSessionId) {
-      chatSession = await ChatSession.findById(chatSessionId);
-      if (!chatSession) {
-        return c.json(
-          {
-            message: "Chat session not found",
-          },
-          404,
-        );
-      }
-    } else {
-      chatSession = new ChatSession();
+    const chatSessionTry: Try<HydratedDocument<ChatSessionInterface>> =
+      chatSessionId
+        ? (await asyncTry(ChatSession.findById(chatSessionId))).flatMap(
+            (session) =>
+              session
+                ? Try.success(session)
+                : Try.failure(new Error("Chat session not found")),
+          )
+        : Try.success(new ChatSession());
+
+    if (isFailure(chatSessionTry)) {
+      return c.json(
+        {
+          message: chatSessionTry.error.message,
+        },
+        404,
+      );
     }
+
+    const chatSession = chatSessionTry.unwrap();
 
     const messages = chatSession.messages;
 
