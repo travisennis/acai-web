@@ -28,9 +28,9 @@ function getLastAssistantMessage(messages: CoreMessage[]): string {
   const assistantMessages = messages
     .filter((msg) => msg.role === "assistant")
     .reverse();
-  
+
   if (assistantMessages.length === 0) return "No response";
-  
+
   const content = assistantMessages[0].content;
   if (typeof content === "string") {
     return content;
@@ -74,7 +74,8 @@ app
         const preview = getLastAssistantMessage(interaction.messages);
         return {
           id: interaction._id.toString(),
-          preview: preview.substring(0, 100) + (preview.length > 100 ? "..." : ""),
+          preview:
+            preview.substring(0, 100) + (preview.length > 100 ? "..." : ""),
         };
       });
 
@@ -97,7 +98,7 @@ app
   .get("/:id", async (c) => {
     try {
       const id = c.req.param("id");
-      
+
       const interaction = await Interaction.findById(id).lean();
 
       if (!interaction) {
