@@ -67,7 +67,12 @@ const honoServer = serve(
           host: process.env.REDIS_HOST,
           port: Number.parseInt(process.env.REDIS_PORT ?? "0"),
           connectTimeout: 2000,
-          reconnectStrategy: (retries: number) => Math.min(retries * 50, 1000),
+          reconnectStrategy: (retries: number) => {
+            if (retries > 20) {
+              return new Error("Too many retries.");
+            }
+            return Math.min(retries * 50, 1000);
+          },
         },
       });
 
