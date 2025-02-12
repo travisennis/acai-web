@@ -9,7 +9,8 @@ export const app = new Hono();
 interface PaginatedResult {
   interactions: {
     id: string;
-    preview: string;
+    request: string;
+    response: string;
   }[];
   pagination: {
     page: number;
@@ -34,7 +35,12 @@ function getLastAssistantMessage(messages: CoreMessage[]): string {
   }
 
   const content = assistantMessages[0].content;
-  if (typeof content === "string") {
+  if (Array.isArray(content)) {
+    const c = content.at(0);
+    if (c?.type === "text") {
+      return c.text;
+    }
+  } else if (typeof content === "string") {
     return content;
   }
   return "Complex response";
@@ -74,10 +80,13 @@ app
         .limit(pageSize);
 
       const formattedInteractions = interactions.map((interaction) => {
+        const prompt = extractUserPrompt(interaction.messages);
         const preview = getLastAssistantMessage(interaction.messages);
         return {
           id: interaction._id.toString(),
-          preview:
+          request:
+            prompt.substring(0, 100) + (preview.length > 100 ? "..." : ""),
+          response:
             preview.substring(0, 100) + (preview.length > 100 ? "..." : ""),
         };
       });

@@ -32,30 +32,7 @@
           <div id="pagination" class="pagination-container"></div>
         </div>
 
-        <!-- Detail View (initially hidden) -->
-        <div id="detailView" class="detail-view hidden">
-          <button id="backButton" class="back-button">← Back to list</button>
-          <div class="detail-grid">
-            <div class="detail-section">
-              <div class="detail-header">
-                <h3 class="detail-heading">Prompt:</h3>
-                <button class="copy-button" onclick="copyContent('promptContent')">Copy</button>
-              </div>
-              <div class="detail-content">
-                <pre id="promptContent" class="content-text"></pre>
-              </div>
-            </div>
-            <div class="detail-section">
-              <div class="detail-header">
-                <h3 class="detail-heading">Response:</h3>
-                <button class="copy-button" onclick="copyContent('responseContent')">Copy</button>
-              </div>
-              <div class="detail-content">
-                <pre id="responseContent" class="content-text"></pre>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   </main>
@@ -78,9 +55,15 @@
           const div = document.createElement('div');
           div.className = 'interaction-item';
           div.innerHTML = `
-            <p class="interaction-preview">${interaction.preview}</p>
+            <div class="interaction-content">
+              <div class="interaction-request">
+                <strong>Request:</strong> ${interaction.request}
+              </div>
+              <div class="interaction-response">
+                <strong>Response:</strong> ${interaction.response}
+              </div>
+            </div>
           `;
-          div.onclick = () => loadDetail(interaction.id);
           interactionsDiv.appendChild(div);
         });
 
@@ -132,25 +115,9 @@
       }
     }
 
-    async function loadDetail(id) {
-      try {
-        const response = await fetch(`/history/${id}`);
-        const data = await response.json();
 
-        document.getElementById('promptContent').textContent = data.prompt;
-        document.getElementById('responseContent').textContent = data.message;
 
-        document.getElementById('historyList').classList.add('hidden');
-        document.getElementById('detailView').classList.remove('hidden');
-      } catch (error) {
-        console.error('Failed to load detail:', error);
-      }
-    }
 
-    document.getElementById('backButton').onclick = () => {
-      document.getElementById('historyList').classList.remove('hidden');
-      document.getElementById('detailView').classList.add('hidden');
-    };
 
     // Copy content to clipboard function
     window.copyContent = async (elementId) => {
