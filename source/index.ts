@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createClient } from "redis";
 import { Server } from "socket.io";
-import { connect } from "mongoose";
+import mongoose, { connect } from "mongoose";
 import { app as chatApp } from "./chat.ts";
 import { app as configApp } from "./config.ts";
 import { app as filesApp } from "./files.ts";
@@ -109,3 +109,13 @@ const honoServer = serve(
 injectWebSocket(honoServer);
 
 export type AppType = typeof routes;
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  try {
+    await mongoose.disconnect();
+  } catch (error) {
+    console.error("Error during Mongoose shutdown:", error);
+  }
+  process.exit(0);
+});
