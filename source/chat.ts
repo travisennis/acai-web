@@ -6,7 +6,6 @@ import {
   languageModel,
   wrapLanguageModel,
 } from "@travisennis/acai-core";
-import { auditMessage, log } from "@travisennis/acai-core/middleware";
 import {
   createBrainstormingTools,
   createCodeInterpreterTool,
@@ -154,9 +153,6 @@ app.post(
     const dataDir = envPaths("acai").data;
     const memoryFilePath = path.join(dataDir, "memory.json");
 
-    const stateDir = envPaths("acai").state;
-    const messagesFilePath = path.join(stateDir, "messages.jsonl");
-
     const baseDir = process.env.BASE_DIR;
     if (!baseDir) {
       return c.json(
@@ -189,7 +185,7 @@ app.post(
       languageModel(chosenModel),
       // usage,
       // log,
-      auditMessage({ path: messagesFilePath }),
+      // auditMessage({ path: messagesFilePath }),
     );
 
     const fsTools = await createFileSystemTools({
@@ -223,7 +219,7 @@ app.post(
         languageModel("google:flash2-search"),
         // log,
         // usage,
-        auditMessage({ path: messagesFilePath }),
+        // auditMessage({ path: messagesFilePath }),
       ),
     });
 
