@@ -18,7 +18,6 @@ import {
   createUrlTools,
   createWebSearchTools,
 } from "@travisennis/acai-core/tools";
-import { zip } from "@travisennis/itertools";
 import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { type CoreMessage, type UserContent, streamText } from "ai";
