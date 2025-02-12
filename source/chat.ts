@@ -279,8 +279,8 @@ app.post(
     const maxSteps = 15;
 
     const start = performance.now();
-    const { response, reasoning, usage, experimental_providerMetadata } =
-      await generateText({
+    const { response, reasoning, usage, providerMetadata } = await generateText(
+      {
         model: langModel,
         temperature: temperature ?? 0.3,
         maxTokens: maxTokens ?? 8192,
@@ -292,7 +292,8 @@ app.post(
         system: systemPrompt,
         messages,
         maxSteps,
-      });
+      },
+    );
 
     const i: Omit<InteractionInterface, "timestamp"> = {
       model: response.modelId,
@@ -317,7 +318,7 @@ app.post(
     chatSession.markModified("messages");
     await chatSession.save();
 
-    const metadata = parseMetadata(experimental_providerMetadata);
+    const metadata = parseMetadata(providerMetadata);
 
     return c.json(
       {

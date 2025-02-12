@@ -322,10 +322,8 @@ export const app = new Hono()
 
             // access the grounding metadata. Casting to the provider metadata type
             // is optional but provides autocomplete and type safety.
-            console.dir(result.experimental_providerMetadata);
-            const metadata = parseMetadata(
-              result.experimental_providerMetadata,
-            );
+            console.dir(result.providerMetadata);
+            const metadata = parseMetadata(result.providerMetadata);
             console.dir(metadata);
 
             // console.info(result.reasoning);
