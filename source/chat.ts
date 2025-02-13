@@ -4,7 +4,6 @@ import {
   type ModelName,
   isSupportedModel,
   languageModel,
-  wrapLanguageModel,
 } from "@travisennis/acai-core";
 import {
   createBrainstormingTools,
@@ -186,12 +185,7 @@ app.post(
       content: pp.processedPrompt,
     });
 
-    const langModel = wrapLanguageModel(
-      languageModel(chosenModel),
-      // usage,
-      // log,
-      // auditMessage({ path: messagesFilePath }),
-    );
+    const langModel = languageModel(chosenModel);
 
     const fsTools = await createFileSystemTools({
       workingDir: baseDir,
@@ -220,12 +214,7 @@ app.post(
     const brainstormingTools = createBrainstormingTools(langModel);
 
     const webSearchTools = createWebSearchTools({
-      model: wrapLanguageModel(
-        languageModel("google:flash2-search"),
-        // log,
-        // usage,
-        // auditMessage({ path: messagesFilePath }),
-      ),
+      model: languageModel("google:flash2-search"),
     });
 
     const allTools = {
