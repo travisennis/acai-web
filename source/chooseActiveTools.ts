@@ -23,7 +23,7 @@ Make sure you fully understand the user's task, before deciding on the tools. On
     extractReasoningMiddleware({ tagName: "thinking" }),
   );
 
-  const { text: chosenTools, reasoning } = await generateText({
+  const { text: chosenTools } = await generateText({
     model: enhancedModel,
     system,
     prompt: `Task: <task>${message}</task>: Output:`,
