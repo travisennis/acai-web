@@ -86,7 +86,8 @@ async function processFilesCommand(context: CommandContext) {
     .replace("@files", "")
     .trimStart()
     .split(" ")
-    .map((p) => p.trim());
+    .map((p) => p.trim())
+    .map((p) => (p.startsWith("/") ? p.slice(1) : p));
   const filePaths = await globby(patterns, {
     gitignore: true,
     cwd: projectDir ?? baseDir,
