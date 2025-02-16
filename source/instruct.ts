@@ -338,24 +338,32 @@ export const app = new Hono()
           },
         });
 
-        // const t = zip(toolCalls, toolResults);
-        // const toolOutput = t
-        //   .map(
-        //     (r, i) =>
-        //       `Step ${i}:\n${textSteps[i]}\n\nToolname: ${r[0].toolName}:\nArgs: ${JSON.stringify(r[0].args)}\nResult:\n${r[1].result}`,
-        //   )
-        //   .toArray()
-        //   .join("\n\n");
-        // const thinkingBlock = `<think>\n${reasoning}\n</think>\n\n`;
-        // const result = `${message}\n\n${reasoning ? thinkingBlock : ""}${toolOutput}\n===\n\n${text}`;
-        // await stream.pipe(result.toDataStream({ sendReasoning: true }));
+        let lastType: "reasoning" | "text-delta" | null = null;
         for await (const chunk of result.fullStream) {
           if (chunk.type === "reasoning" || chunk.type === "text-delta") {
+            if (lastType !== "reasoning" && chunk.type === "reasoning") {
+              await stream.writeSSE({
+                event: "message",
+                data: "\n<think>\n",
+              });
+            } else if (lastType === "reasoning" && chunk.type !== "reasoning") {
+              await stream.writeSSE({
+                event: "message",
+                data: "\n</think>\n",
+              });
+            }
             await stream.writeSSE({
               event: "message",
               data: chunk.textDelta,
             });
+            lastType = chunk.type;
           }
+        }
+        if (lastType === "reasoning") {
+          await stream.writeSSE({
+            event: "message",
+            data: "\n</think>\n",
+          });
         }
 
         result.consumeStream();
