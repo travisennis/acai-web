@@ -19,7 +19,13 @@ import {
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
-import { type CoreMessage, type UserContent, streamText } from "ai";
+import {
+  type CoreMessage,
+  NoSuchToolError,
+  type UserContent,
+  generateObject,
+  streamText,
+} from "ai";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { match } from "ts-pattern";
@@ -258,6 +264,33 @@ export const app = new Hono()
           system: systemPrompt,
           messages,
           maxSteps,
+          // biome-ignore lint/style/useNamingConvention: <explanation>
+          experimental_repairToolCall: async ({
+            toolCall,
+            tools,
+            parameterSchema,
+            error,
+          }) => {
+            if (NoSuchToolError.isInstance(error)) {
+              return null; // do not attempt to fix invalid tool names
+            }
+
+            const tool = tools[toolCall.toolName as keyof typeof tools];
+
+            const { object: repairedArgs } = await generateObject({
+              model: languageModel("openai:gpt-4o-structured"),
+              schema: tool.parameters,
+              prompt: [
+                `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
+                JSON.stringify(toolCall.args),
+                "The tool accepts the following schema:",
+                JSON.stringify(parameterSchema(toolCall)),
+                "Please fix the arguments.",
+              ].join("\n"),
+            });
+
+            return { ...toolCall, args: JSON.stringify(repairedArgs) };
+          },
           onStepFinish: async (event) => {
             if (
               event.stepType === "initial" &&
