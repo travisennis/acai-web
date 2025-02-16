@@ -407,7 +407,7 @@ export const app = new Hono()
                 maxTokens: maxTokens ?? 8192,
                 activeTools,
               },
-              messages: messages.concat(result.response.messages),
+              messages: chatSession.messages,
               usage: {
                 promptTokens: result.usage.promptTokens,
                 completionTokens: result.usage.completionTokens,
