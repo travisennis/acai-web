@@ -89,32 +89,21 @@
     let currentChatSessionId = undefined;
 
     // Fetch config from server
-    async function fetchGlobalConfig() {
+    async function fetchConfig(url) {
       try {
-        const response = await fetch('/config');
+        const response = await fetch(url);
         const config = await response.json();
         return config;
       } catch (error) {
-        console.error('Error fetching config:', error);
-        return {};
-      }
-    }
-
-    async function fetchConfig() {
-      try {
-        const response = await fetch('/chat');
-        const config = await response.json();
-        return config;
-      } catch (error) {
-        console.error('Error fetching endpoint config:', error);
+        console.error(`Error fetching config ${url}:`, error);
         return {};
       }
     }
 
     // Initialize select options
     async function initializeSelects() {
-      const globalConfig = await fetchGlobalConfig();
-      const config = await fetchConfig();
+      const globalConfig = await fetchConfig("/config");
+      const config = await fetchConfig("/chat/config");
       const modelDatalist = document.getElementById('models');
       const modelInput = document.getElementById('model');
       const modeSelect = document.getElementById('mode');
@@ -240,15 +229,55 @@
           }),
         });
 
-        const data = await response.json();
+        const { requestId } = await response.json();
 
-        // Store the chat session ID
-        currentChatSessionId = data.chatSessionId;
-
-        // Add assistant message
-        messages.push(...data.messages);
-
+        // Create a new message placeholder for the assistant's response
+        const assistantMessage = {
+          role: 'assistant',
+          content: ''
+        };
+        messages.push(assistantMessage);
         renderMessages();
+
+        // Second request: GET with the stream ID
+        const eventSource = new EventSource(`/chat?requestId=${requestId}`);
+
+        eventSource.onopen = () => {
+          console.log('SSE Connection established');
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('SSE error:', error);
+          setLoading(false);
+          eventSource.close();
+        };
+
+        eventSource.onmessage = (event) => {
+          assistantMessage.content += event.data;
+          renderMessages();
+        };
+
+        eventSource.addEventListener("complete", (e) => {
+          // Store the chat session ID if it was provided
+          if (e.data) {
+            try {
+              const data = JSON.parse(e.data);
+              if (data.chatSessionId) {
+                currentChatSessionId = data.chatSessionId;
+              }
+            } catch (err) {
+              console.error('Error parsing close event data:', err);
+            }
+          }
+        });
+
+        eventSource.addEventListener("close", (e) => {
+          setLoading(false);
+          console.info("received close event");
+          console.dir(e);
+          eventSource.close();
+
+        });
       } catch (error) {
         console.error('Error:', error);
         if (error.name === 'AbortError') {
