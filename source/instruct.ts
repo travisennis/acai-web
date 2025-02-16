@@ -366,7 +366,7 @@ export const app = new Hono()
 
             await stream.writeSSE({
               event: "close",
-              data: "request error",
+              data: `request error: ${(error as Error).message}`,
             });
           },
         });
