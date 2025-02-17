@@ -27,7 +27,9 @@
     .pdf-container {
       width: 100%;
       height: 100%;
-      overflow: auto;
+      overflow-y: auto;
+      overflow-x: clip;
+      position: relative;
     }
 
     .pdf-container canvas {
@@ -35,6 +37,62 @@
       height: auto;
       margin: 0 auto;
       display: block;
+      user-select: text;
+    }
+
+    .pdf-controls {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid #ccc;
+    }
+
+    .pdf-controls button {
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+    }
+
+    .pdf-controls button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pdf-text-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      opacity: 0.2;
+      line-height: 1.0;
+    }
+
+    .pdf-text-layer > span {
+      color: transparent;
+      position: absolute;
+      white-space: pre;
+      cursor: text;
+      transform-origin: 0% 0%;
+    }
+
+    .text-selection-menu {
+      position: fixed;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: none;
     }
 
     .drop-message {
@@ -45,6 +103,10 @@
       font-size: 1.2em;
       color: #666;
       pointer-events: none;
+    }
+
+    #pageNum {
+      color: var(--text-dark-primary);
     }
   </style>
 </head>
@@ -85,6 +147,14 @@
               <div class="drop-message">Drop a PDF file here</div>
               <div id="pdfContainer" class="pdf-container">
                 <!-- PDF will be rendered here -->
+              </div>
+              <div class="pdf-controls">
+                <button id="prevPage" disabled>Previous</button>
+                <span id="pageNum">Page 1 of 1</span>
+                <button id="nextPage" disabled>Next</button>
+              </div>
+              <div id="textSelectionMenu" class="text-selection-menu">
+                <button id="addToPrompt">Add to Chat Prompt</button>
               </div>
             </div>
 
@@ -135,6 +205,9 @@
     let isLoading = false;
     let currentChatSessionId = undefined;
     let pdfTextContent = '';
+    let currentPDF = null;
+    let currentPage = 1;
+    let selectedText = '';
 
     // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
@@ -434,11 +507,22 @@
 
     // Function to render the PDF in the #pdfContainer
     async function renderPDF(pdf) {
+      currentPDF = pdf;
       const pdfContainer = document.getElementById('pdfContainer');
-      pdfContainer.innerHTML = ''; // Clear previous content
+      const prevButton = document.getElementById('prevPage');
+      const nextButton = document.getElementById('nextPage');
+      const pageNumSpan = document.getElementById('pageNum');
 
-      // Render first page initially
-      const page = await pdf.getPage(1);
+      // Update navigation controls
+      prevButton.disabled = currentPage <= 1;
+      nextButton.disabled = currentPage >= pdf.numPages;
+      pageNumSpan.textContent = `Page ${currentPage} of ${pdf.numPages}`;
+
+      // Clear previous content
+      pdfContainer.innerHTML = '';
+
+      // Render current page
+      const page = await pdf.getPage(currentPage);
       const scale = 1.5;
       const viewport = page.getViewport({ scale: scale });
 
@@ -448,15 +532,72 @@
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
+      // Create div for text layer
+      const textLayerDiv = document.createElement('div');
+      textLayerDiv.className = 'pdf-text-layer';
+      textLayerDiv.style.height = viewport.height + 'px';
+      textLayerDiv.style.width = viewport.width + 'px';
+
       // Render PDF page into canvas context
       const renderContext = {
         canvasContext: context,
         viewport: viewport
       };
-      await page.render(renderContext).promise;
 
-      // Append the canvas to the container
-      pdfContainer.appendChild(canvas);
+      // Render page and text layer
+      await Promise.all([
+        page.render(renderContext).promise,
+//        page.getTextContent().then(textContent => {
+//          pdfjsLib.renderTextLayer({
+//            textContent: textContent,
+//            container: textLayerDiv,
+//            viewport: viewport,
+//            textDivs: []
+//          });
+//        })
+      ]);
+
+      // Append the canvas and text layer to the container
+      const pageDiv = document.createElement('div');
+      pageDiv.style.position = 'relative';
+      pageDiv.appendChild(canvas);
+      pageDiv.appendChild(textLayerDiv);
+      pdfContainer.appendChild(pageDiv);
+    }
+
+    // Function to handle page navigation
+    async function changePage(delta) {
+      const newPage = currentPage + delta;
+      if (newPage >= 1 && newPage <= currentPDF.numPages) {
+        currentPage = newPage;
+        await renderPDF(currentPDF);
+      }
+    }
+
+    // Function to handle text selection
+    function handleTextSelection() {
+      const selection = window.getSelection();
+      const text = selection.toString().trim();
+      if (text) {
+        selectedText = text;
+        const menu = document.getElementById('textSelectionMenu');
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        menu.style.display = 'block';
+        menu.style.left = `${rect.left}px`;
+        menu.style.top = `${rect.bottom + 5}px`;
+      }
+    }
+
+    // Function to add selected text to chat prompt
+    function addSelectedTextToPrompt() {
+      if (selectedText) {
+        const chatInput = document.getElementById('chat-message');
+        chatInput.value += (chatInput.value ? '\n' : '') + selectedText;
+        selectedText = '';
+        document.getElementById('textSelectionMenu').style.display = 'none';
+      }
     }
 
     function handleKeyDown(e) {
@@ -468,6 +609,18 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
+      // Add event listeners for PDF navigation
+      document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
+      document.getElementById('nextPage').addEventListener('click', () => changePage(1));
+
+      // Add event listeners for text selection
+      document.addEventListener('mouseup', handleTextSelection);
+      document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('#textSelectionMenu')) {
+          document.getElementById('textSelectionMenu').style.display = 'none';
+        }
+      });
+      document.getElementById('addToPrompt').addEventListener('click', addSelectedTextToPrompt);
       await initializeSelects();
       document.getElementById('chatForm').addEventListener('submit', handleSubmit);
       document.getElementById("chat-message").addEventListener('keydown', handleKeyDown);
