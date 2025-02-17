@@ -76,6 +76,79 @@
   white-space: pre-wrap;
   font-family: inherit;
 }
+
+.history-list {
+  height: 100%;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.interactions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.interaction-item {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.interaction-item p {
+  margin-bottom: 0;
+}
+
+.interaction-item:hover {
+  background: var(--background);
+}
+
+.interaction-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.interaction-request,
+.interaction-response {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.interaction-request strong,
+.interaction-response strong {
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.pagination-container {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pagination-button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.pagination-button:hover {
+  background: var(--background);
+}
+
+.pagination-button.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
   </style>
 </head>
 
