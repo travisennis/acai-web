@@ -58,6 +58,16 @@ const promptSchema = new Schema<PromptInterface & Timestamps>(
     role: { type: String, enum: ["system", "user"], required: true },
   },
   {
+    // biome-ignore lint/style/useNamingConvention: <explanation>
+    toJSON: {
+      virtuals: true,
+      versionKey: false,
+      transform: (_doc, ret) => {
+        // biome-ignore lint/performance/noDelete: <explanation>
+        delete ret._id;
+        return ret;
+      },
+    },
     timestamps: true,
   },
 );
@@ -78,6 +88,16 @@ const pageSchema = new Schema<PageInterface & Timestamps>(
     content: { type: String, required: true },
   },
   {
+    // biome-ignore lint/style/useNamingConvention: <explanation>
+    toJSON: {
+      virtuals: true,
+      versionKey: false,
+      transform: (_doc, ret) => {
+        // biome-ignore lint/performance/noDelete: <explanation>
+        delete ret._id;
+        return ret;
+      },
+    },
     timestamps: true,
   },
 );
