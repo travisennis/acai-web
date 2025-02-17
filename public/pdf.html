@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF Chat</title>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="/public/style.css">
+  <style>
+    #pdfDropArea {
+      position: relative;
+      border: 2px dashed #ccc;
+      padding: 20px;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #pdfDropArea.dragover {
+      border-color: #000;
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .pdf-container {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+
+    .pdf-container canvas {
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .drop-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2em;
+      color: #666;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="main-nav">
+    <div class="nav-container">
+      <div class="nav-links">
+        <a href="/public/instruct.html" class="nav-link">Instruct</a>
+        <a href="/public/chat.html" class="nav-link">Chat</a>
+        <a href="/public/pdf.html" class="nav-link active">PDF</a>
+        <a href="/public/files.html" class="nav-link">Files</a>
+        <a href="/public/prompts.html" class="nav-link">Prompts</a>
+        <a href="/public/history.html" class="nav-link">History</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="content-container">
+      <div class="chat-container">
+        <div class="chat-form">
+          <div class="input-section">
+            <!-- Left section (messages + input) -->
+            <div class="message-container">
+              <div id="messagesContainer" class="messages-container">
+                <!-- Messages will be inserted here -->
+              </div>
+
+              <form id="chatForm" class="chat-input-container">
+                <textarea id="chat-message" name="message" rows="1" class="chat-textarea"
+                  placeholder="Type your message here...(Ctrl+Enter to submit)"></textarea>
+                <button type="submit" id="submitButton" class="submit-button">Send</button>
+              </form>
+            </div>
+
+            <div class="response-container" id="pdfDropArea">
+              <div class="drop-message">Drop a PDF file here</div>
+              <div id="pdfContainer" class="pdf-container">
+                <!-- PDF will be rendered here -->
+              </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="settings-panel">
+              <div class="settings-container">
+                <div class="settings-group">
+                  <label for="model" class="settings-label">Model</label>
+                  <input list="models" id="model" name="model" class="settings-input" value="anthropic:sonnet">
+                  <datalist id="models">
+                  </datalist>
+                </div>
+
+                <div class="settings-group">
+                  <label for="maxTokens" class="settings-label">Max Tokens</label>
+                  <input type="number" id="maxTokens" name="maxTokens" min="0" max="8192" step="1" value="8192"
+                    class="settings-input">
+                </div>
+
+                <div class="settings-group">
+                  <label for="temperature" class="settings-label">Temperature</label>
+                  <input type="number" id="temperature" name="temperature" step="0.1" min="0" max="2" value="0.3"
+                    class="settings-input">
+                </div>
+
+                <div class="settings-group">
+                  <label for="mode" class="settings-label">Mode</label>
+                  <select id="mode" name="mode" class="settings-input"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Include PDF.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+  
+  <script type="module">
+    import {marked} from "https://esm.run/marked";
+
+    const messages = [];
+    let isLoading = false;
+    let currentChatSessionId = undefined;
+    let pdfTextContent = '';
+
+    // Initialize PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
+
+    // Fetch config from server
+    async function fetchConfig(url) {
+      try {
+        const response = await fetch(url);
+        const config = await response.json();
+        return config;
+      } catch (error) {
+        console.error(`Error fetching config ${url}:`, error);
+        return {};
+      }
+    }
+
+    // Initialize select options
+    async function initializeSelects() {
+      const globalConfig = await fetchConfig("/config");
+      const config = await fetchConfig("/chat/config");
+      const modelDatalist = document.getElementById('models');
+      const modelInput = document.getElementById('model');
+      const modeSelect = document.getElementById('mode');
+
+      // Add click handler to select all text in model input
+      modelInput.addEventListener('click', function () {
+        this.select();
+      });
+
+      // Populate model options
+      globalConfig.models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        modelDatalist.appendChild(option);
+      });
+
+      config.modes.forEach(mode => {
+        const option = document.createElement('option');
+        option.value = mode;
+        option.textContent = mode;
+        if (model === 'normal') option.selected = true;
+        modeSelect.appendChild(option);
+      });
+    }
+
+    // Render messages
+    function renderMessages() {
+      const container = document.getElementById('messagesContainer');
+      container.innerHTML = '';
+
+      messages.forEach(message => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.role}`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        const content = message.content;
+        if (Array.isArray(content)) {
+          content.forEach((c) => {
+            if (c.type == "text") {
+              contentDiv.innerHTML = marked.parse(c.text);
+            } else if (c.type === "tool-call") {
+                contentDiv.innerHTML = marked.parse(typeof c.args === 'string' ?
+                  c.args : JSON.stringify(c.args));
+            } else if (c.type === "tool-result") {
+                contentDiv.innerHTML = marked.parse(typeof c.args === 'string' ?
+                  c.args : JSON.stringify(c.result));
+            }
+          });
+        } else {
+          contentDiv.innerHTML = marked.parse(message.content);
+        }
+
+        messageDiv.appendChild(contentDiv);
+        container.appendChild(messageDiv);
+      });
+
+      // Scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function setLoading(loading) {
+      isLoading = loading;
+      const submitButton = document.getElementById('submitButton');
+      submitButton.disabled = loading;
+
+      if (loading) {
+        submitButton.innerHTML = `
+      <svg class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="16" height="16">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Processing...
+    `;
+      } else {
+        submitButton.textContent = 'Send';
+      }
+    }
+
+    // Handle form submission
+    async function handleSubmit(event) {
+      event.preventDefault();
+      if (isLoading) return;
+
+      const messageInput = document.getElementById('chat-message');
+      const message = messageInput.value;
+
+      if (!message.trim()) return;
+
+      setLoading(true);
+
+      // Add user message
+      messages.push({
+        role: 'user',
+        content: message
+      });
+
+      // Clear input
+      messageInput.value = '';
+
+      // Render messages
+      renderMessages();
+
+      try {
+        const timeout = 120;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
+
+        const response = await fetch('/chat', {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message,
+            model: document.getElementById("model").value,
+            maxTokens: Number(document.getElementById("maxTokens").value),
+            temperature: Number(document.getElementById("temperature").value),
+            chatSessionId: currentChatSessionId,
+            mode: document.getElementById("mode").value,
+            pdfTextContent: pdfTextContent
+          }),
+        });
+
+        const { requestId } = await response.json();
+
+        // Create a new message placeholder for the assistant's response
+        const assistantMessage = {
+          role: 'assistant',
+          content: ''
+        };
+        messages.push(assistantMessage);
+        renderMessages();
+
+        // Second request: GET with the stream ID
+        const eventSource = new EventSource(`/chat?requestId=${requestId}`);
+
+        eventSource.onopen = () => {
+          console.log('SSE Connection established');
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('SSE error:', error);
+          setLoading(false);
+          eventSource.close();
+        };
+
+        eventSource.onmessage = (event) => {
+          assistantMessage.content += event.data;
+          renderMessages();
+        };
+
+        eventSource.addEventListener("complete", (e) => {
+          if (e.data) {
+            try {
+              const data = JSON.parse(e.data);
+              if (data.chatSessionId) {
+                currentChatSessionId = data.chatSessionId;
+              }
+            } catch (err) {
+              console.error('Error parsing close event data:', err);
+            }
+          }
+        });
+
+        eventSource.addEventListener("close", (e) => {
+          setLoading(false);
+          console.info("received close event");
+          console.dir(e);
+          eventSource.close();
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        if (error.name === 'AbortError') {
+          messages.push({
+            role: 'system',
+            content: `Request timed out after ${timeout} seconds`
+          });
+        } else {
+          messages.push({
+            role: 'system',
+            content: 'Failed to send message'
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Handle drag and drop events
+    function handleDragOver(evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      evt.dataTransfer.dropEffect = 'copy';
+      evt.currentTarget.classList.add('dragover');
+    }
+
+    function handleDragLeave(evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      evt.currentTarget.classList.remove('dragover');
+    }
+
+    async function handleFileSelect(evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      evt.currentTarget.classList.remove('dragover');
+
+      const files = evt.dataTransfer.files;
+      if (files.length > 0) {
+        const file = files[0];
+        if (file.type !== 'application/pdf') {
+          alert('Please drop a PDF file.');
+          return;
+        }
+
+        // Read and render the PDF
+        await readAndRenderPDF(file);
+      }
+    }
+
+    // Function to read and render the PDF using PDF.js
+    async function readAndRenderPDF(file) {
+      const reader = new FileReader();
+
+      reader.onload = async function (e) {
+        const arrayBuffer = e.target.result;
+
+        try {
+          // Load the PDF
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+          // Extract text from PDF
+          pdfTextContent = await extractTextFromPDF(pdf);
+
+          // Render the PDF
+          await renderPDF(pdf);
+
+          // Hide the drop message
+          document.querySelector('.drop-message').style.display = 'none';
+
+          // Add system message about loaded PDF
+          messages.push({
+            role: 'system',
+            content: `PDF loaded successfully. ${pdf.numPages} pages loaded. You can now ask questions about the PDF content.`
+          });
+          renderMessages();
+        } catch (error) {
+          console.error('Error processing PDF:', error);
+          messages.push({
+            role: 'system',
+            content: 'Error processing PDF file. Please try again with a different file.'
+          });
+          renderMessages();
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Function to extract text from the PDF
+    async function extractTextFromPDF(pdf) {
+      let textContent = '';
+      const numPages = pdf.numPages;
+
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContentObj = await page.getTextContent();
+        const pageText = textContentObj.items.map(item => item.str).join(' ');
+        textContent += `Page ${pageNum}:\n${pageText}\n\n`;
+      }
+
+      return textContent;
+    }
+
+    // Function to render the PDF in the #pdfContainer
+    async function renderPDF(pdf) {
+      const pdfContainer = document.getElementById('pdfContainer');
+      pdfContainer.innerHTML = ''; // Clear previous content
+
+      // Render first page initially
+      const page = await pdf.getPage(1);
+      const scale = 1.5;
+      const viewport = page.getViewport({ scale: scale });
+
+      // Create canvas element for PDF page
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      // Render PDF page into canvas context
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+      await page.render(renderContext).promise;
+
+      // Append the canvas to the container
+      pdfContainer.appendChild(canvas);
+    }
+
+    function handleKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('chatForm').requestSubmit();
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initializeSelects();
+      document.getElementById('chatForm').addEventListener('submit', handleSubmit);
+      document.getElementById("chat-message").addEventListener('keydown', handleKeyDown);
+
+      // Get the PDF drop area
+      const pdfDropArea = document.getElementById('pdfDropArea');
+
+      // Add event listeners for drag-and-drop functionality
+      pdfDropArea.addEventListener('dragover', handleDragOver, false);
+      pdfDropArea.addEventListener('dragleave', handleDragLeave, false);
+      pdfDropArea.addEventListener('drop', handleFileSelect, false);
+    });
+  </script>
+</body>
+
+</html>
