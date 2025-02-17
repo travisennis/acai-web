@@ -123,10 +123,13 @@
   </main>
 
   <!-- Include PDF.js library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module"></script>
   
   <script type="module">
-    import {marked} from "https://esm.run/marked";
+    import { marked } from "https://esm.run/marked";
+//    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+    var { pdfjsLib } = globalThis;
 
     const messages = [];
     let isLoading = false;
@@ -134,7 +137,7 @@
     let pdfTextContent = '';
 
     // Initialize PDF.js
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
 
     // Fetch config from server
     async function fetchConfig(url) {
