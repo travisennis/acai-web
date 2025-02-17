@@ -8,6 +8,75 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="/public/style.css">
+  <style>
+
+.detail-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.back-button {
+  margin-bottom: 1rem;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  align-self: flex-start;
+}
+
+.back-button:hover {
+  background: var(--background);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  height: calc(100% - 3rem);
+  overflow: hidden;
+}
+
+.detail-section {
+  background: var(--background);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-heading {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.detail-content {
+  flex: 1;
+  overflow-y: auto;
+  /* Change to auto */
+  background: var(--surface);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.detail-content pre {
+  padding: 0;
+  margin: 0;
+}
+
+.content-text {
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+  </style>
 </head>
 
 <body>
