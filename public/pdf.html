@@ -3,10 +3,11 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>PDF Chat</title>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.css" integrity="sha512-ugPyk5JbAJAcxXi7D7DJHXqaysFMoHwhsQ75OO8jLSg0X+fQcZsxNOnDzDIWCwYkLF7HLxPSL5k0ePacCdCLJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/public/style.css">
   <style>
     #pdfDropArea {
@@ -24,65 +25,16 @@
       background-color: rgba(0, 0, 0, 0.05);
     }
 
+    #pdfContainer {
+      position: absolute;
+    }
+
     .pdf-container {
       width: 100%;
       height: 100%;
       overflow-y: auto;
       overflow-x: clip;
       position: relative;
-    }
-
-    .pdf-container canvas {
-      max-width: 100%;
-      height: auto;
-      margin: 0 auto;
-      display: block;
-      user-select: text;
-    }
-
-    .pdf-controls {
-      position: sticky;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 10px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      border-top: 1px solid #ccc;
-    }
-
-    .pdf-controls button {
-      padding: 5px 10px;
-      border: 1px solid #ccc;
-      background: white;
-      cursor: pointer;
-    }
-
-    .pdf-controls button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .pdf-text-layer {
-      position: absolute;
-      left: 0;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      overflow: hidden;
-      opacity: 0.2;
-      line-height: 1.0;
-    }
-
-    .pdf-text-layer > span {
-      color: transparent;
-      position: absolute;
-      white-space: pre;
-      cursor: text;
-      transform-origin: 0% 0%;
     }
 
     .text-selection-menu {
@@ -103,10 +55,6 @@
       font-size: 1.2em;
       color: #666;
       pointer-events: none;
-    }
-
-    #pageNum {
-      color: var(--text-dark-primary);
     }
   </style>
 </head>
@@ -137,7 +85,7 @@
               </div>
 
               <form id="chatForm" class="chat-input-container">
-                <textarea id="chat-message" name="message" rows="1" class="chat-textarea"
+                <textarea id="chat-message" name="message" rows="3" class="chat-textarea"
                   placeholder="Type your message here...(Ctrl+Enter to submit)"></textarea>
                 <button type="submit" id="submitButton" class="submit-button">Send</button>
               </form>
@@ -146,12 +94,7 @@
             <div class="response-container" id="pdfDropArea">
               <div class="drop-message">Drop a PDF file here</div>
               <div id="pdfContainer" class="pdf-container">
-                <!-- PDF will be rendered here -->
-              </div>
-              <div class="pdf-controls">
-                <button id="prevPage" disabled>Previous</button>
-                <span id="pageNum">Page 1 of 1</span>
-                <button id="nextPage" disabled>Next</button>
+                <div id="viewer" class="pdfViewer"></div>
               </div>
               <div id="textSelectionMenu" class="text-selection-menu">
                 <button id="addToPrompt">Add to Chat Prompt</button>
@@ -194,6 +137,7 @@
 
   <!-- Include PDF.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf_viewer.mjs" type="module"></script>
   
   <script type="module">
     import { marked } from "https://esm.run/marked";
@@ -509,69 +453,32 @@
     async function renderPDF(pdf) {
       currentPDF = pdf;
       const pdfContainer = document.getElementById('pdfContainer');
-      const prevButton = document.getElementById('prevPage');
-      const nextButton = document.getElementById('nextPage');
-      const pageNumSpan = document.getElementById('pageNum');
-
-      // Update navigation controls
-      prevButton.disabled = currentPage <= 1;
-      nextButton.disabled = currentPage >= pdf.numPages;
-      pageNumSpan.textContent = `Page ${currentPage} of ${pdf.numPages}`;
-
-      // Clear previous content
-      pdfContainer.innerHTML = '';
 
       // Render current page
       const page = await pdf.getPage(currentPage);
       const scale = 1.5;
       const viewport = page.getViewport({ scale: scale });
 
-      // Create canvas element for PDF page
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+      const outputScale = window.devicePixelRatio || 1;
+      const transform = outputScale !== 1
+        ? [outputScale, 0, 0, outputScale, 0, 0]
+        : null;
 
-      // Create div for text layer
-      const textLayerDiv = document.createElement('div');
-      textLayerDiv.className = 'pdf-text-layer';
-      textLayerDiv.style.height = viewport.height + 'px';
-      textLayerDiv.style.width = viewport.width + 'px';
+      const eventBus = new pdfjsViewer.EventBus();
 
-      // Render PDF page into canvas context
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
+      const pdfViewer = new pdfjsViewer.PDFViewer({
+        container: pdfContainer,
+        viewer: document.getElementById("viewer"),
+        textLayerMode: 1,
+        eventBus,
+      });
 
-      // Render page and text layer
-      await Promise.all([
-        page.render(renderContext).promise,
-//        page.getTextContent().then(textContent => {
-//          pdfjsLib.renderTextLayer({
-//            textContent: textContent,
-//            container: textLayerDiv,
-//            viewport: viewport,
-//            textDivs: []
-//          });
-//        })
-      ]);
+      pdfViewer.setDocument(pdf);
 
-      // Append the canvas and text layer to the container
-      const pageDiv = document.createElement('div');
-      pageDiv.style.position = 'relative';
-      pageDiv.appendChild(canvas);
-      pageDiv.appendChild(textLayerDiv);
-      pdfContainer.appendChild(pageDiv);
-    }
-
-    // Function to handle page navigation
-    async function changePage(delta) {
-      const newPage = currentPage + delta;
-      if (newPage >= 1 && newPage <= currentPDF.numPages) {
-        currentPage = newPage;
-        await renderPDF(currentPDF);
-      }
+      eventBus.on("pagesinit", function () {
+        // We can use pdfViewer now, e.g. let's change default scale.
+        pdfViewer.currentScaleValue = "auto";
+      });
     }
 
     // Function to handle text selection
@@ -609,10 +516,6 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
-      // Add event listeners for PDF navigation
-      document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
-      document.getElementById('nextPage').addEventListener('click', () => changePage(1));
-
       // Add event listeners for text selection
       document.addEventListener('mouseup', handleTextSelection);
       document.addEventListener('mousedown', (e) => {
