@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { directoryTree, loadUrl } from "@travisennis/acai-core/tools";
+import { directoryTree, readUrl } from "@travisennis/acai-core/tools";
 import { globby } from "globby";
 
 interface CommandContext {
@@ -143,7 +143,7 @@ async function processUrlCommand(context: CommandContext) {
   const { line, processedLines } = context;
   const urlPath = line.replace("@url ", "").trim();
   try {
-    const clean = await loadUrl(urlPath);
+    const clean = await readUrl(urlPath);
     processedLines.push(`URL: ${urlPath}\n\`\`\`\n${clean.trim()}\n\`\`\`\n`);
   } catch (error) {
     processedLines.push(`Url:${urlPath}\nStatus: ${error}`);
