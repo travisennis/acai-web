@@ -85,8 +85,11 @@ async function processFilesCommand(context: CommandContext) {
       continue;
     }
     try {
-      const fileContents = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
-      processedLines.push(formatFile(filePath, fileContents, format);
+      const fileContents = await fs.readFile(
+        path.join(baseDir, filePath.trim()),
+        "utf8",
+      );
+      processedLines.push(formatFile(filePath, fileContents, format));
     } catch (error) {
       if ((error as { code: string }).code === "ENOENT") {
         processedLines.push(
