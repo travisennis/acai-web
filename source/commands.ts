@@ -1,39 +1,18 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { formatFile } from "@travisennis/acai-core";
 import { directoryTree, readUrl } from "@travisennis/acai-core/tools";
 import { globby } from "globby";
 
 interface CommandContext {
+  model: string;
   baseDir: string;
   projectDir: string | null;
   line: string;
   processedLines: string[];
   attachments: Buffer[];
 }
-
-const codeBlockExtensions: Record<string, string> = {
-  js: "javascript",
-  ts: "typescript",
-  py: "python",
-  rb: "ruby",
-  java: "java",
-  cpp: "cpp",
-  cs: "csharp",
-  go: "go",
-  rs: "rust",
-  php: "php",
-  html: "html",
-  css: "css",
-  json: "json",
-  yml: "yaml",
-  yaml: "yaml",
-  md: "markdown",
-  sql: "sql",
-  sh: "bash",
-  bash: "bash",
-  txt: "text",
-};
 
 async function processListPrompts(context: CommandContext) {
   const { baseDir, processedLines } = context;
@@ -59,14 +38,18 @@ async function processPromptCommand(context: CommandContext) {
 async function processFileCommand(context: CommandContext) {
   const { baseDir, line, processedLines } = context;
   const filePath = line.replace("@file", "").trim();
-  const fileExtension = filePath.split(".").pop() || "";
-  const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
 
+  const format = context.model.includes("deepseek")
+    ? "bracket"
+    : context.model.includes("anthropic")
+      ? "xml"
+      : "markdown";
   try {
-    const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
-    processedLines.push(
-      `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
+    const fileContents = await fs.readFile(
+      path.join(baseDir, filePath.trim()),
+      "utf8",
     );
+    processedLines.push(formatFile(filePath, fileContents, format));
   } catch (error) {
     if ((error as { code: string }).code === "ENOENT") {
       processedLines.push(
@@ -82,6 +65,11 @@ async function processFileCommand(context: CommandContext) {
 
 async function processFilesCommand(context: CommandContext) {
   const { baseDir, line, processedLines, projectDir } = context;
+  const format = context.model.includes("deepseek")
+    ? "bracket"
+    : context.model.includes("anthropic")
+      ? "xml"
+      : "markdown";
   const patterns = line
     .replace("@files", "")
     .trimStart()
@@ -97,12 +85,8 @@ async function processFilesCommand(context: CommandContext) {
       continue;
     }
     try {
-      const fileExtension = filePath.split(".").pop() || "";
-      const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
-      const f = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
-      processedLines.push(
-        `File: ${filePath}\n\`\`\` ${codeBlockName}\n${f}\n\`\`\``,
-      );
+      const fileContents = await fs.readFile(path.join(baseDir, filePath.trim()), "utf8");
+      processedLines.push(formatFile(filePath, fileContents, format);
     } catch (error) {
       if ((error as { code: string }).code === "ENOENT") {
         processedLines.push(
@@ -206,7 +190,7 @@ const secondPassCommandHandlers: Record<
 
 export async function processPrompt(
   message: string,
-  { baseDir }: { baseDir: string },
+  { baseDir, model }: { baseDir: string; model: string },
 ) {
   const lines = message.split("\n");
   let processedLines: string[] = [];
@@ -222,6 +206,7 @@ export async function processPrompt(
 
     if (command) {
       const context = {
+        model,
         baseDir,
         projectDir,
         line,
@@ -244,6 +229,7 @@ export async function processPrompt(
 
       if (command) {
         const context: CommandContext = {
+          model,
           baseDir,
           projectDir,
           line,

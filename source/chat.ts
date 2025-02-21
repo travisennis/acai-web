@@ -217,6 +217,7 @@ export const app = new Hono()
 
         const pp = await processPrompt(message, {
           baseDir,
+          model: chosenModel,
         });
 
         if (pp.returnPrompt) {
