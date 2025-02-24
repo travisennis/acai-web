@@ -172,13 +172,6 @@ export const app = new Hono()
           });
         }
 
-        // const langModel = wrapLanguageModel(
-        //   languageModel(chosenModel),
-        // usage,
-        // log,
-        // auditMessage({ path: messagesFilePath }),
-        // );
-
         const langModel = languageModel(chosenModel);
 
         const fsTools = await createFileSystemTools({
