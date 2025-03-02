@@ -18,7 +18,7 @@ import {
   createUrlTools,
   createWebSearchTools,
 } from "@travisennis/acai-core/tools";
-import envPaths from "@travisennis/stdlib/env";
+import { envPaths } from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
 import {
   type CoreMessage,
@@ -192,7 +192,9 @@ export const app = new Hono()
           apiKey: process.env.RAINDROP_API_KEY ?? "",
         });
 
-        const urlTools = createUrlTools();
+        const urlTools = createUrlTools({
+          summarizationModel: languageModel("anthropic:haiku"),
+        });
 
         const memoryTools = createKnowledgeGraphTools({ path: memoryFilePath });
 
