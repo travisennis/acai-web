@@ -220,13 +220,14 @@ export const app = new Hono()
           model: chosenModel,
         });
 
-        if (pp.returnPrompt) {
-          await stream.writeSSE({
-            event: "update-prompt",
-            data: pp.processedPrompt,
-          });
-          return;
-        }
+        // chat does not need this, but it means that second pass commands are not possible
+        // if (pp.returnPrompt) {
+        //   await stream.writeSSE({
+        //     event: "update-prompt",
+        //     data: pp.processedPrompt,
+        //   });
+        //   return;
+        // }
 
         const finalMessage = pp.processedPrompt;
 
